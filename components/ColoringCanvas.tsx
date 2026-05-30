@@ -182,7 +182,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
     return (
       <div className="relative bg-white"
-        style={{ aspectRatio: `${dims.w}/${dims.h}`, maxWidth: '100%', maxHeight: '100%' }}>
+        style={{ aspectRatio: `${dims.w}/${dims.h}`, width: '100%', maxHeight: '100%' }}>
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"
           style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}
