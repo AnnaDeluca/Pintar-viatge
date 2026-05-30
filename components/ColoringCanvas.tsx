@@ -23,7 +23,8 @@ function sobelEdges(src: ImageData, threshold: number): ImageData {
       const mag = Math.hypot(gx, gy)
       const i = (y * W + x) * 4
       if (mag > threshold) {
-        out.data[i + 3] = Math.min(255, mag * 1.8)
+        // black pixel, alpha proportional to edge strength
+        out.data[i + 3] = Math.min(255, mag * 3.5)
       }
     }
   }
@@ -132,7 +133,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillRect(0, 0, W, H)
 
           const ec = edge.getContext('2d')!
-          ec.putImageData(sobelEdges(src, 28), 0, 0)
+          ec.putImageData(sobelEdges(src, 12), 0, 0)
         } catch {
           // Canvas tainted (CORS) — draw image directly, no coloring
           const pc = paint.getContext('2d')!
