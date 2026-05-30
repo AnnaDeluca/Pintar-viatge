@@ -22,6 +22,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [showOriginal, setShowOriginal] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const handleLoadFail = useCallback(() => setLoadError(true), [])
 
   const handleSvgClick = useCallback((x: number, y: number) => {
     setDots(prev => {
@@ -118,7 +119,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
                   ref={canvasRef}
                   imageUrl={painting.imageUrl}
                   selectedColor={selectedColor}
-                  onLoadFail={() => setLoadError(true)}
+                  onLoadFail={handleLoadFail}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3"

@@ -73,20 +73,6 @@ export const paintings: PaintingMeta[] = [
     imageUrl: '/paintings/kahlo.jpg',
     thumbUrl: '/paintings/kahlo-thumb.jpg',
   },
-  {
-    id: 'tarsila',
-    title: 'Arearea',
-    artist: 'Paul Gauguin',
-    year: 1892,
-    country: 'Polinèsia',
-    flag: '🌺',
-    emoji: '🌴',
-    funFact: 'El Gauguin va anar a viure a Tahití per descobrir colors i cultures noves. Arearea vol dir "diversió"!',
-    palette: ['#57CC99','#F6C90E','#E63946','#4CC9F0','#8B4513','#F4A261','#2E8B57','#FFD700'],
-    regions: [],
-    imageUrl: '/paintings/tarsila.jpg',
-    thumbUrl: '/paintings/tarsila-thumb.jpg',
-  },
   // ── Europa ────────────────────────────────────────────────────
   {
     id: 'vangogh',
