@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 
-const MAX_DIM = 700
+const MAX_DIM = 400
 
 // ── Sobel edge detection ──────────────────────────────────────────────────────
 function luma(d: Uint8ClampedArray, i: number) {
@@ -106,44 +106,56 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       const edge  = edgeRef.current
       if (!paint || !edge) return
 
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
+      const tryLoad = (useCors: boolean) => {
+        const img = new Image()
+        if (useCors) img.crossOrigin = 'anonymous'
 
-      img.onerror = () => {
-        onLoadFail?.()
+        img.onerror = () => {
+          if (useCors) {
+            // CORS failed — retry without crossOrigin (no canvas coloring, just display)
+            tryLoad(false)
+          } else {
+            onLoadFail?.()
+          }
+        }
+
+        img.onload = () => {
+          const scale = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight))
+          const W = Math.round(img.naturalWidth  * scale)
+          const H = Math.round(img.naturalHeight * scale)
+          setDims({ w: W, h: H })
+
+          paint.width = W;  paint.height = H
+          edge.width  = W;  edge.height  = H
+
+          try {
+            const tmp = document.createElement('canvas')
+            tmp.width = W; tmp.height = H
+            const tc = tmp.getContext('2d')!
+            tc.filter = 'blur(1.5px)'
+            tc.drawImage(img, 0, 0, W, H)
+            const src = tc.getImageData(0, 0, W, H)
+            maskData.current = new Uint8ClampedArray(src.data)
+
+            const pc = paint.getContext('2d')!
+            pc.fillStyle = '#fff'
+            pc.fillRect(0, 0, W, H)
+
+            const ec = edge.getContext('2d')!
+            ec.putImageData(sobelEdges(src, 28), 0, 0)
+          } catch {
+            // Canvas tainted (CORS) — draw image directly, no coloring
+            const pc = paint.getContext('2d')!
+            pc.drawImage(img, 0, 0, W, H)
+          }
+
+          setReady(true)
+        }
+
+        img.src = imageUrl
       }
 
-      img.onload = () => {
-        const scale = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight))
-        const W = Math.round(img.naturalWidth  * scale)
-        const H = Math.round(img.naturalHeight * scale)
-        setDims({ w: W, h: H })
-
-        paint.width = W;  paint.height = H
-        edge.width  = W;  edge.height  = H
-
-        // Blur source for smoother region detection
-        const tmp = document.createElement('canvas')
-        tmp.width = W; tmp.height = H
-        const tc = tmp.getContext('2d')!
-        tc.filter = 'blur(1.5px)'
-        tc.drawImage(img, 0, 0, W, H)
-        const src = tc.getImageData(0, 0, W, H)
-        maskData.current = new Uint8ClampedArray(src.data)
-
-        // Paint = white
-        const pc = paint.getContext('2d')!
-        pc.fillStyle = '#fff'
-        pc.fillRect(0, 0, W, H)
-
-        // Edges
-        const ec = edge.getContext('2d')!
-        ec.putImageData(sobelEdges(src, 28), 0, 0)
-
-        setReady(true)
-      }
-
-      img.src = imageUrl
+      tryLoad(true)
     }, [imageUrl, onLoadFail])
 
     const handlePointer = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
