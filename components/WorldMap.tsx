@@ -3,30 +3,50 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  Marker,
-} from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { paintings } from '@/data/paintings'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
+// Tots els quadres europeus junts, "França" integrat a Europa
 const PINS = [
-  { id: 'europa',    label: 'Europa',     coords: [10, 50]   as [number,number], paintingIds: ['lascaux','vangogh','matisse','mondrian','kandinsky','klimt'], emoji: '🎨', color: '#f093fb' },
-  { id: 'japo',      label: 'Japó',       coords: [138, 36]  as [number,number], paintingIds: ['hokusai','kusama'], emoji: '🌊', color: '#4CC9F0' },
-  { id: 'franca',    label: 'França',     coords: [2.3, 48.9] as [number,number], paintingIds: ['kahlo'], emoji: '💃', color: '#f5576c' },
-  { id: 'sudafrica', label: 'Sud-àfrica', coords: [25, -29]  as [number,number], paintingIds: ['ndebele'], emoji: '🏠', color: '#57CC99' },
+  {
+    id: 'europa',
+    label: 'Europa',
+    coords: [15, 50] as [number, number],
+    paintingIds: ['lascaux', 'vangogh', 'matisse', 'mondrian', 'kandinsky', 'klimt', 'kahlo'],
+    emoji: '🎨',
+    color: '#f093fb',
+    glow: 'rgba(240,147,251,0.5)',
+  },
+  {
+    id: 'japo',
+    label: 'Japó',
+    coords: [138, 36] as [number, number],
+    paintingIds: ['hokusai', 'kusama'],
+    emoji: '🌊',
+    color: '#4CC9F0',
+    glow: 'rgba(76,201,240,0.5)',
+  },
+  {
+    id: 'sudafrica',
+    label: 'Sud-àfrica',
+    coords: [25, -30] as [number, number],
+    paintingIds: ['ndebele'],
+    emoji: '🏠',
+    color: '#57CC99',
+    glow: 'rgba(87,204,153,0.5)',
+  },
 ]
 
-const HIGHLIGHT: Record<number, string> = {
-  250: '#3d1a4a',
-  528: '#1a2d4a',
-  276: '#1a2d4a',
-  40:  '#1a2d4a',
-  392: '#1a2d4a',
-  710: '#1a3d2a',
+// Countries to highlight (ISO numeric)
+const HIGHLIGHT: Record<number, { fill: string; hover: string }> = {
+  250: { fill: '#4a2060', hover: '#6a2d88' }, // França
+  528: { fill: '#1e3d7a', hover: '#2a55aa' }, // Holanda
+  276: { fill: '#1e3d7a', hover: '#2a55aa' }, // Alemanya
+  40:  { fill: '#1e3d7a', hover: '#2a55aa' }, // Àustria
+  392: { fill: '#0a4a6b', hover: '#0d6a9b' }, // Japó
+  710: { fill: '#1a5c3a', hover: '#24844f' }, // Sud-àfrica
 }
 
 export default function WorldMap() {
@@ -49,9 +69,19 @@ export default function WorldMap() {
       <div className="flex-1" style={{ minHeight: 0 }}>
         <ComposableMap
           projection="geoMercator"
-          projectionConfig={{ scale: 130, center: [20, 10] }}
+          projectionConfig={{ scale: 140, center: [20, 15] }}
           style={{ width: '100%', height: '100%' }}
         >
+          {/* Ocean gradient via rect */}
+          <rect width="800" height="600" fill="url(#oceanGrad)" />
+
+          <defs>
+            <radialGradient id="oceanGrad" cx="50%" cy="50%" r="80%">
+              <stop offset="0%" stopColor="#0d3b5e" />
+              <stop offset="100%" stopColor="#071a2e" />
+            </radialGradient>
+          </defs>
+
           <Geographies geography={GEO_URL}>
             {({ geographies }: { geographies: any[] }) =>
               geographies.map((geo: any) => {
@@ -60,12 +90,12 @@ export default function WorldMap() {
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill={h ?? '#1e3a2e'}
-                    stroke="#0d2137"
-                    strokeWidth={0.5}
+                    fill={h?.fill ?? '#1e4d2b'}
+                    stroke="#0d2518"
+                    strokeWidth={0.4}
                     style={{
                       default: { outline: 'none' },
-                      hover:   { outline: 'none', fill: h ? '#5a2d6a' : '#2d5a42' },
+                      hover:   { outline: 'none', fill: h?.hover ?? '#2a6b3c', cursor: 'default' },
                       pressed: { outline: 'none' },
                     }}
                   />
@@ -77,20 +107,68 @@ export default function WorldMap() {
           {PINS.map(pin => {
             const isActive = activePin === pin.id
             return (
-              <Marker key={pin.id} coordinates={pin.coords} onClick={() => handlePin(pin)} style={{ cursor: 'pointer' }}>
-                <circle r={18} fill={pin.color} opacity={0.2} />
-                <circle r={12} fill={pin.color} opacity={0.3} />
-                <circle r={9} fill={isActive ? '#fff' : pin.color} stroke="white" strokeWidth={2} />
-                <text textAnchor="middle" y={4} fontSize={9} style={{ pointerEvents: 'none' }}>{pin.emoji}</text>
-                <text textAnchor="middle" y={26} fontSize={9} fill="white"
-                  style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))' }}>
+              <Marker
+                key={pin.id}
+                coordinates={pin.coords}
+                onClick={() => handlePin(pin)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Pulsing glow rings */}
+                <circle r={28} fill={pin.glow} opacity={0.25} />
+                <circle r={20} fill={pin.glow} opacity={0.35} />
+
+                {/* Pin body */}
+                <circle r={14}
+                  fill={isActive ? '#ffffff' : pin.color}
+                  stroke="white"
+                  strokeWidth={2.5}
+                  style={{ filter: `drop-shadow(0 2px 8px ${pin.glow})` }}
+                />
+
+                {/* Emoji */}
+                <text
+                  textAnchor="middle"
+                  y={5}
+                  fontSize={12}
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {pin.emoji}
+                </text>
+
+                {/* Label amb fons */}
+                <rect
+                  x={-28} y={18}
+                  width={56} height={16}
+                  rx={8}
+                  fill="rgba(0,0,0,0.55)"
+                />
+                <text
+                  textAnchor="middle"
+                  y={30}
+                  fontSize={9}
+                  fill="white"
+                  style={{
+                    fontFamily: 'Nunito,sans-serif',
+                    fontWeight: 800,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                  }}
+                >
                   {pin.label}
                 </text>
+
+                {/* Badge recompte */}
                 {pin.paintingIds.length > 1 && (
                   <>
-                    <circle cx={8} cy={-8} r={7} fill="#F6C90E" stroke="white" strokeWidth={1.5} />
-                    <text x={8} y={-4} textAnchor="middle" fontSize={8} fill="#1A1A1A"
-                      style={{ fontWeight: 800, pointerEvents: 'none' }}>{pin.paintingIds.length}</text>
+                    <circle cx={12} cy={-12} r={9}
+                      fill="#F6C90E"
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                    <text x={12} y={-8} textAnchor="middle" fontSize={9} fill="#1A1A1A"
+                      style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                      {pin.paintingIds.length}
+                    </text>
                   </>
                 )}
               </Marker>
@@ -99,32 +177,65 @@ export default function WorldMap() {
         </ComposableMap>
       </div>
 
+      {/* Popup quadres */}
       {activeData && (
-        <div className="absolute inset-x-2 bottom-2 rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(10,18,30,0.97)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)' }}>
+        <div
+          className="absolute inset-x-3 bottom-3 rounded-3xl overflow-hidden"
+          style={{
+            background: 'rgba(8,14,26,0.96)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+          }}
+        >
+          {/* Header popup */}
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <p className="text-white/60 text-xs" style={{ fontFamily: 'Nunito' }}>{activeData.label} · Tria un quadre</p>
-            <button onClick={() => setActivePin(null)} className="text-white/40 text-lg leading-none">×</button>
+            <div>
+              <p className="text-white font-bold text-sm" style={{ fontFamily: "'Fredoka One',cursive" }}>
+                {activeData.emoji} {activeData.label}
+              </p>
+              <p className="text-white/40 text-xs" style={{ fontFamily: 'Nunito,sans-serif' }}>
+                Tria un quadre per pintar
+              </p>
+            </div>
+            <button
+              onClick={() => setActivePin(null)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.08)', fontSize: 16 }}>
+              ×
+            </button>
           </div>
-          <div className="flex gap-2 px-3 pb-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+
+          {/* Quadres grid */}
+          <div className="flex gap-2.5 px-3 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {activeData.paintingIds.map(id => {
               const p = paintingMap[id]
               if (!p) return null
               return (
                 <Link key={id} href={`/pintar/${id}`}
-                  className="shrink-0 rounded-xl overflow-hidden active:scale-95 transition-transform"
-                  style={{ width: 130 }}>
-                  <div className="h-20 flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg,#1a1a3a,#2d1a4a)' }}>
+                  className="shrink-0 rounded-2xl overflow-hidden active:scale-95 transition-transform"
+                  style={{
+                    width: 120,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                  <div className="h-20 overflow-hidden">
                     {p.thumbUrl
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={p.thumbUrl} alt={p.title} className="w-full h-full object-cover" />
-                      : <span className="text-4xl">{p.emoji}</span>}
+                      : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl"
+                          style={{ background: 'linear-gradient(135deg,#1a1a3a,#2d1a4a)' }}>
+                          {p.emoji}
+                        </div>
+                      )
+                    }
                   </div>
-                  <div className="px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <div className="px-2 py-2">
                     <p className="text-white text-xs font-bold leading-tight truncate"
                       style={{ fontFamily: "'Fredoka One',cursive" }}>{p.title}</p>
-                    <p className="text-white/50 text-xs truncate" style={{ fontFamily: 'Nunito' }}>{p.artist}</p>
+                    <p className="text-white/45 text-xs truncate mt-0.5"
+                      style={{ fontFamily: 'Nunito,sans-serif' }}>{p.artist}</p>
                   </div>
                 </Link>
               )
