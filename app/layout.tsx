@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '🎨 Viaje Mágico por el Arte',
-  description: 'Pinta cuadros de artistas famosos en un viaje por el mundo y el tiempo',
+  title: '🎨 Pintem junts!',
+  description: 'Pinta quadres d\'artistes famosos en un viatge pel món i el temps',
 }
 
 export const viewport: Viewport = {
@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="ca">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com"/>
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>

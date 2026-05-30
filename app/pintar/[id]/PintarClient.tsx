@@ -24,8 +24,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
 
   const handleSvgClick = useCallback((x: number, y: number) => {
     setDots(prev => {
-      const next = [...prev, { x, y, color: selectedColor }]
-      if (next.length === 30 && !celebrate) {
+      const next = [...prev, { x, y, color: selectedColor, r: 7 + Math.floor(Math.random() * 9) }]
+      if (next.length === 25 && !celebrate) {
         setTimeout(() => { setCelebrate(true); setTimeout(() => setCelebrate(false), 3000) }, 200)
       }
       return next
@@ -121,7 +121,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               ) : (
                 <div className="flex items-center justify-center text-white/40 text-sm p-8 text-center"
                   style={{ fontFamily: 'Nunito,sans-serif' }}>
-                  Cuadro no disponible
+                  Quadre no disponible
                 </div>
               )}
             </div>
@@ -138,7 +138,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
                 style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}/>
               <p className="absolute bottom-3 text-white/50 text-xs"
                 style={{ fontFamily: 'Nunito,sans-serif' }}>
-                Toca para cerrar
+                Toca per tancar
               </p>
             </div>
           )}
@@ -150,7 +150,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               <div className="text-8xl mb-2 animate-bounce">🎉</div>
               <p className="text-3xl font-bold text-center"
                 style={{ fontFamily: "'Fredoka One',cursive", color: '#f5576c' }}>
-                ¡Eres un artista!
+                Ets un artista!
               </p>
               <p className="text-5xl mt-3">⭐🎨⭐</p>
             </div>

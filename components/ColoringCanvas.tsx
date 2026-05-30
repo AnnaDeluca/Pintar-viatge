@@ -190,7 +190,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         {!ready && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-3">
             <div className="text-5xl animate-bounce">🎨</div>
-            <p className="text-sm text-black/40" style={{ fontFamily: 'Nunito,sans-serif' }}>Cargando…</p>
+            <p className="text-sm text-black/40" style={{ fontFamily: 'Nunito,sans-serif' }}>Carregant…</p>
           </div>
         )}
       </div>
