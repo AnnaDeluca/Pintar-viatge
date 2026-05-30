@@ -70,10 +70,11 @@ interface Props {
   imageUrl: string
   selectedColor: string
   onLoadFail?: () => void
+  className?: string
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, onLoadFail }, ref) {
+  function ColoringCanvas({ imageUrl, selectedColor, onLoadFail, className = '' }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
@@ -174,7 +175,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
     }, [ready, selectedColor])
 
     return (
-      <div className="relative bg-white"
+      <div className={`relative bg-white ${className}`}
         style={{ aspectRatio: `${dims.w}/${dims.h}`, width: '100%', maxHeight: '100%' }}>
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"

@@ -87,51 +87,33 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
       {/* Canvas + referència */}
       <div className="flex-1 flex gap-2 px-3 pb-2 overflow-hidden min-h-0">
 
-        {/* Canvas principal */}
-        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 overflow-hidden">
+        {/* Canvas principal — directament al flex, sense wrappers intermedis */}
+        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
               style={{ maxHeight: '100%', maxWidth: '100%', width: '100%', aspectRatio: '280/300' }}>
               <Kusama fills={{}} onRegionClick={() => {}}
                 dots={dots} onSvgClick={handleSvgClick}/>
             </div>
+          ) : painting.imageUrl && !loadError ? (
+            <ColoringCanvas
+              ref={canvasRef}
+              imageUrl={painting.imageUrl}
+              selectedColor={selectedColor}
+              onLoadFail={handleLoadFail}
+              className="rounded-3xl overflow-hidden shadow-2xl"
+            />
           ) : (
-            <div className="relative w-full h-full flex items-center justify-center">
-              {painting.imageUrl && !loadError ? (
-                <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ maxWidth: '100%', maxHeight: '100%' }}>
-                  <ColoringCanvas
-                    ref={canvasRef}
-                    imageUrl={painting.imageUrl}
-                    selectedColor={selectedColor}
-                    onLoadFail={handleLoadFail}
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3"
-                  style={{ fontFamily: 'Nunito,sans-serif', width: 240, height: 180 }}>
-                  <span className="text-5xl">🖼️</span>
-                  <p>No s&apos;ha pogut carregar el quadre</p>
-                  {loadError && (
-                    <button onClick={() => setLoadError(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-90 transition-transform"
-                      style={{ background: 'rgba(255,255,255,0.15)' }}>
-                      Tornar a intentar
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Celebration */}
-              {celebrate && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-                  style={{ background: 'rgba(255,255,255,0.92)', zIndex: 30 }}>
-                  <div className="text-8xl mb-2 animate-bounce">🎉</div>
-                  <p className="text-3xl font-bold text-center"
-                    style={{ fontFamily: "'Fredoka One',cursive", color: '#f5576c' }}>
-                    Ets un artista!
-                  </p>
-                  <p className="text-5xl mt-3">⭐🎨⭐</p>
-                </div>
+            <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3 rounded-3xl"
+              style={{ fontFamily: 'Nunito,sans-serif', width: 240, height: 180, background: 'rgba(255,255,255,0.05)' }}>
+              <span className="text-5xl">🖼️</span>
+              <p>No s&apos;ha pogut carregar el quadre</p>
+              {loadError && (
+                <button onClick={() => setLoadError(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-90 transition-transform"
+                  style={{ background: 'rgba(255,255,255,0.15)' }}>
+                  Tornar a intentar
+                </button>
               )}
             </div>
           )}
@@ -162,6 +144,19 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           </div>
         )}
       </div>
+
+      {/* Celebració a pantalla completa */}
+      {celebrate && (
+        <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none"
+          style={{ background: 'rgba(255,255,255,0.95)', zIndex: 50 }}>
+          <div className="text-8xl mb-4 animate-bounce">🎉</div>
+          <p className="text-4xl font-bold text-center px-8"
+            style={{ fontFamily: "'Fredoka One',cursive", color: '#f5576c' }}>
+            Ets un artista!
+          </p>
+          <p className="text-5xl mt-4">⭐🎨⭐</p>
+        </div>
+      )}
 
       {/* Overlay original a pantalla completa */}
       {showOriginal && painting.imageUrl && (
