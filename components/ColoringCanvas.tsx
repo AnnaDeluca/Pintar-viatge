@@ -109,22 +109,28 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
       let cancelled = false
 
-      const applyImage = (img: HTMLImageElement) => {
+      const img1 = new Image()
+
+      img1.onload = () => {
         if (cancelled) return
-        const scale = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight))
-        const W = Math.round(img.naturalWidth  * scale)
-        const H = Math.round(img.naturalHeight * scale)
+        clearTimeout(timeout)
+
+        const { naturalWidth: nw, naturalHeight: nh } = img1
+        if (!nw || !nh) { onLoadFail?.(); return }
+
+        const scale = Math.min(1, MAX_DIM / Math.max(nw, nh))
+        const W = Math.round(nw * scale)
+        const H = Math.round(nh * scale)
         setDims({ w: W, h: H })
 
-        paint.width = W;  paint.height = H
-        edge.width  = W;  edge.height  = H
+        paint.width = W; paint.height = H
+        edge.width  = W; edge.height  = H
 
         try {
           const tmp = document.createElement('canvas')
           tmp.width = W; tmp.height = H
           const tc = tmp.getContext('2d')!
-          tc.filter = 'blur(1.5px)'
-          tc.drawImage(img, 0, 0, W, H)
+          tc.drawImage(img1, 0, 0, W, H)
           const src = tc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(src.data)
 
@@ -135,24 +141,20 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const ec = edge.getContext('2d')!
           ec.putImageData(sobelEdges(src, 12), 0, 0)
         } catch {
-          // Canvas tainted (CORS) — draw image directly, no coloring
           const pc = paint.getContext('2d')!
-          pc.drawImage(img, 0, 0, W, H)
+          if (pc) pc.drawImage(img1, 0, 0, W, H)
         }
 
-        setReady(true)
+        if (!cancelled) setReady(true)
       }
 
-      // Images served from same origin (/api/img) — no CORS needed, canvas won't be tainted.
-      const img1 = new Image()
-      img1.onload  = () => applyImage(img1)
       img1.onerror = () => { if (!cancelled) onLoadFail?.() }
       img1.src = imageUrl
 
-      // Fallback: if nothing has loaded after 12 s, call onLoadFail
+      // Fallback timeout — cancelled as soon as onload fires
       const timeout = setTimeout(() => {
         if (!cancelled) onLoadFail?.()
-      }, 12000)
+      }, 15000)
 
       return () => {
         cancelled = true
