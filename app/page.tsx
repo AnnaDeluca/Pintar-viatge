@@ -41,8 +41,10 @@ export default function GalleryPage() {
         </p>
       </header>
 
-      <div className="flex-1 relative min-h-0" style={{ zIndex: 1 }}>
-        <WorldMap />
+      <div className="flex-1 relative" style={{ zIndex: 1, minHeight: 0 }}>
+        <div className="absolute inset-0">
+          <WorldMap />
+        </div>
       </div>
     </div>
   )

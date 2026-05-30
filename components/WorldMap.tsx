@@ -65,11 +65,12 @@ export default function WorldMap() {
   const activeData = activePin ? PINS.find(p => p.id === activePin) : null
 
   return (
-    <div className="relative w-full flex-1 flex flex-col" style={{ minHeight: 0 }}>
-      <div className="flex-1" style={{ minHeight: 0 }}>
+    <div className="relative w-full h-full" style={{ minHeight: 0 }}>
+      {/* Mapa ─ absolute per omplir tot l'espai disponible */}
+      <div className="absolute inset-0">
         <ComposableMap
           projection="geoMercator"
-          projectionConfig={{ scale: 140, center: [20, 15] }}
+          projectionConfig={{ scale: 125, center: [20, 10] }}
           style={{ width: '100%', height: '100%' }}
         >
           {/* Ocean gradient via rect */}
@@ -113,9 +114,11 @@ export default function WorldMap() {
                 onClick={() => handlePin(pin)}
                 style={{ cursor: 'pointer' }}
               >
+                {/* Zona de click invisible gran */}
+                <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
                 {/* Pulsing glow rings */}
-                <circle r={28} fill={pin.glow} opacity={0.25} />
-                <circle r={20} fill={pin.glow} opacity={0.35} />
+                <circle r={28} fill={pin.glow} opacity={0.25} style={{ pointerEvents: 'none' }} />
+                <circle r={20} fill={pin.glow} opacity={0.35} style={{ pointerEvents: 'none' }} />
 
                 {/* Pin body */}
                 <circle r={14}
