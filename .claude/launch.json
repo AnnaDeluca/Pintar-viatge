@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pintar-viatge",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\anna\\pintar-viatge && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

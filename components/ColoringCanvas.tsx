@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 
-const MAX_DIM = 400
+const MAX_DIM = 900
 
 // ── Sobel edge detection ──────────────────────────────────────────────────────
 function luma(d: Uint8ClampedArray, i: number) {
@@ -178,7 +178,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
     }, [ready, selectedColor])
 
     return (
-      <div className="relative w-full h-full bg-white" style={{ aspectRatio: `${dims.w}/${dims.h}` }}>
+      <div className="relative bg-white" style={{ aspectRatio: `${dims.w}/${dims.h}`, maxWidth: '100%', maxHeight: '100%' }}>
         {/* Color layer */}
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"
