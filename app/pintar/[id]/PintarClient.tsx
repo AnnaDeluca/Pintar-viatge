@@ -88,7 +88,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
       <div className="flex-1 flex gap-2 px-3 pb-2 overflow-hidden min-h-0">
 
         {/* Canvas principal */}
-        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0">
+        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 overflow-hidden">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
               style={{ maxHeight: '100%', maxWidth: '100%', width: '100%', aspectRatio: '280/300' }}>
@@ -96,15 +96,16 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
                 dots={dots} onSvgClick={handleSvgClick}/>
             </div>
           ) : (
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl"
-              style={{ maxWidth: '100%', maxHeight: '100%' }}>
+            <div className="relative w-full h-full flex items-center justify-center">
               {painting.imageUrl && !loadError ? (
-                <ColoringCanvas
-                  ref={canvasRef}
-                  imageUrl={painting.imageUrl}
-                  selectedColor={selectedColor}
-                  onLoadFail={handleLoadFail}
-                />
+                <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+                  <ColoringCanvas
+                    ref={canvasRef}
+                    imageUrl={painting.imageUrl}
+                    selectedColor={selectedColor}
+                    onLoadFail={handleLoadFail}
+                  />
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3"
                   style={{ fontFamily: 'Nunito,sans-serif', width: 240, height: 180 }}>
