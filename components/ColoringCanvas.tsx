@@ -106,14 +106,12 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       const img = new Image()
 
       img.onload = () => {
-        console.log('[Canvas] onload fired, alive=', alive, 'url=', imageUrl)
         if (!alive) return
         clearTimeout(failTimer)
 
         const nw = img.naturalWidth
         const nh = img.naturalHeight
-        console.log('[Canvas] dimensions:', nw, 'x', nh)
-        if (!nw || !nh) { console.log('[Canvas] zero dims, failing'); onFailRef.current?.(); return }
+        if (!nw || !nh) { onFailRef.current?.(); return }
 
         const scale = Math.min(1, MAX_DIM / Math.max(nw, nh))
         const W = Math.round(nw * scale)
@@ -130,7 +128,6 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           tc.drawImage(img, 0, 0, W, H)
           const src = tc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(src.data)
-          console.log('[Canvas] getImageData OK, running Sobel...')
 
           const pc = paint.getContext('2d')!
           pc.fillStyle = '#fff'
@@ -138,9 +135,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
           const ec = edge.getContext('2d')!
           ec.putImageData(sobelEdges(src, 12), 0, 0)
-          console.log('[Canvas] Sobel done, setReady(true)')
         } catch (err) {
-          console.log('[Canvas] catch error:', err)
           const pc = paint.getContext('2d')
           if (pc) pc.drawImage(img, 0, 0, W, H)
         }
@@ -148,12 +143,10 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         if (alive) {
           setDims({ w: W, h: H })
           setReady(true)
-        } else {
-          console.log('[Canvas] alive=false, skipping setReady')
         }
       }
 
-      img.onerror = () => { console.log('[Canvas] onerror fired, url=', imageUrl); if (alive) onFailRef.current?.() }
+      img.onerror = () => { if (alive) onFailRef.current?.() }
       img.src = imageUrl
 
       return () => {
