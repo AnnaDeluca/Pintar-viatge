@@ -142,20 +142,10 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         setReady(true)
       }
 
-      // Try with CORS first (needed for flood fill). If it fails, retry without
-      // CORS using a cache-busted URL to avoid the browser caching the failed
-      // preflight and blocking the second attempt.
+      // Images served from same origin (/api/img) — no CORS needed, canvas won't be tainted.
       const img1 = new Image()
-      img1.crossOrigin = 'anonymous'
       img1.onload  = () => applyImage(img1)
-      img1.onerror = () => {
-        if (cancelled) return
-        const img2 = new Image()
-        const bust = imageUrl.includes('?') ? '&_=1' : '?_=1'
-        img2.onload  = () => applyImage(img2)
-        img2.onerror = () => { if (!cancelled) onLoadFail?.() }
-        img2.src = imageUrl + bust
-      }
+      img1.onerror = () => { if (!cancelled) onLoadFail?.() }
       img1.src = imageUrl
 
       // Fallback: if nothing has loaded after 12 s, call onLoadFail
