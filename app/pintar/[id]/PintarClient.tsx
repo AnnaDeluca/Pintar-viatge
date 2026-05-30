@@ -21,6 +21,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const handleSvgClick = useCallback((x: number, y: number) => {
     setDots(prev => {
@@ -112,16 +113,26 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           ) : (
             /* Real painting → ColoringCanvas */
             <div className="rounded-3xl overflow-hidden shadow-2xl w-full h-full flex items-center justify-center">
-              {painting.imageUrl ? (
+              {painting.imageUrl && !loadError ? (
                 <ColoringCanvas
                   ref={canvasRef}
                   imageUrl={painting.imageUrl}
                   selectedColor={selectedColor}
+                  onLoadFail={() => setLoadError(true)}
                 />
               ) : (
-                <div className="flex items-center justify-center text-white/40 text-sm p-8 text-center"
+                <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3"
                   style={{ fontFamily: 'Nunito,sans-serif' }}>
-                  Quadre no disponible
+                  <span className="text-5xl">🖼️</span>
+                  <p>No s&apos;ha pogut carregar el quadre</p>
+                  {loadError && (
+                    <button
+                      onClick={() => setLoadError(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-90 transition-transform"
+                      style={{ background: 'rgba(255,255,255,0.15)' }}>
+                      Tornar a intentar
+                    </button>
+                  )}
                 </div>
               )}
             </div>

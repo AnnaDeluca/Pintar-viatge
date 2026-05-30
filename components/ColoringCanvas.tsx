@@ -106,56 +106,69 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       const edge  = edgeRef.current
       if (!paint || !edge) return
 
-      const tryLoad = (useCors: boolean) => {
-        const img = new Image()
-        if (useCors) img.crossOrigin = 'anonymous'
+      let cancelled = false
 
-        img.onerror = () => {
-          if (useCors) {
-            // CORS failed — retry without crossOrigin (no canvas coloring, just display)
-            tryLoad(false)
-          } else {
-            onLoadFail?.()
-          }
+      const applyImage = (img: HTMLImageElement) => {
+        if (cancelled) return
+        const scale = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight))
+        const W = Math.round(img.naturalWidth  * scale)
+        const H = Math.round(img.naturalHeight * scale)
+        setDims({ w: W, h: H })
+
+        paint.width = W;  paint.height = H
+        edge.width  = W;  edge.height  = H
+
+        try {
+          const tmp = document.createElement('canvas')
+          tmp.width = W; tmp.height = H
+          const tc = tmp.getContext('2d')!
+          tc.filter = 'blur(1.5px)'
+          tc.drawImage(img, 0, 0, W, H)
+          const src = tc.getImageData(0, 0, W, H)
+          maskData.current = new Uint8ClampedArray(src.data)
+
+          const pc = paint.getContext('2d')!
+          pc.fillStyle = '#fff'
+          pc.fillRect(0, 0, W, H)
+
+          const ec = edge.getContext('2d')!
+          ec.putImageData(sobelEdges(src, 28), 0, 0)
+        } catch {
+          // Canvas tainted (CORS) — draw image directly, no coloring
+          const pc = paint.getContext('2d')!
+          pc.drawImage(img, 0, 0, W, H)
         }
 
-        img.onload = () => {
-          const scale = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight))
-          const W = Math.round(img.naturalWidth  * scale)
-          const H = Math.round(img.naturalHeight * scale)
-          setDims({ w: W, h: H })
-
-          paint.width = W;  paint.height = H
-          edge.width  = W;  edge.height  = H
-
-          try {
-            const tmp = document.createElement('canvas')
-            tmp.width = W; tmp.height = H
-            const tc = tmp.getContext('2d')!
-            tc.filter = 'blur(1.5px)'
-            tc.drawImage(img, 0, 0, W, H)
-            const src = tc.getImageData(0, 0, W, H)
-            maskData.current = new Uint8ClampedArray(src.data)
-
-            const pc = paint.getContext('2d')!
-            pc.fillStyle = '#fff'
-            pc.fillRect(0, 0, W, H)
-
-            const ec = edge.getContext('2d')!
-            ec.putImageData(sobelEdges(src, 28), 0, 0)
-          } catch {
-            // Canvas tainted (CORS) — draw image directly, no coloring
-            const pc = paint.getContext('2d')!
-            pc.drawImage(img, 0, 0, W, H)
-          }
-
-          setReady(true)
-        }
-
-        img.src = imageUrl
+        setReady(true)
       }
 
-      tryLoad(true)
+      // Try with CORS first (needed for flood fill). If it fails, retry without
+      // CORS using a cache-busted URL to avoid the browser caching the failed
+      // preflight and blocking the second attempt.
+      const img1 = new Image()
+      img1.crossOrigin = 'anonymous'
+      img1.onload  = () => applyImage(img1)
+      img1.onerror = () => {
+        if (cancelled) return
+        const img2 = new Image()
+        const bust = imageUrl.includes('?') ? '&_=1' : '?_=1'
+        img2.onload  = () => applyImage(img2)
+        img2.onerror = () => { if (!cancelled) onLoadFail?.() }
+        img2.src = imageUrl + bust
+      }
+      img1.src = imageUrl
+
+      // Fallback: if nothing has loaded after 12 s, call onLoadFail
+      const timeout = setTimeout(() => {
+        if (!cancelled) onLoadFail?.()
+      }, 12000)
+
+      return () => {
+        cancelled = true
+        clearTimeout(timeout)
+        img1.onload = null
+        img1.onerror = null
+      }
     }, [imageUrl, onLoadFail])
 
     const handlePointer = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
