@@ -213,6 +213,17 @@ export const paintings: PaintingMeta[] = [
   },
   // ── Europa (Espanya) ───────────────────────────────────────────
   {
+    id: 'lewitt',
+    title: 'Mural de Barcelona',
+    artist: 'Sol LeWitt',
+    year: 2002, country: 'Espanya', flag: '🇪🇸', emoji: '🔷',
+    funFact: 'El Sol LeWitt no pintava els seus murals: donava instruccions als ajudants! Aquest mural ENORME el pots veure al vestíbul del CaixaForum Barcelona.',
+    palette: ['#E63946','#F6C90E','#2364AA','#1A1A1A','#FFFFFF','#57CC99','#8B5CF6','#F4A261'],
+    regions: [],
+    imageUrl: '/paintings/lewitt.jpg', thumbUrl: '/paintings/lewitt-thumb.jpg',
+    coords: [2.15, 41.38],
+  },
+  {
     id: 'velazquez',
     title: 'Les Menines',
     artist: 'Diego Velázquez',

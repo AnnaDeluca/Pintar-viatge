@@ -19,7 +19,7 @@ const CLUSTERS = [
     coords: [12, 50] as [number, number],
     color: '#f093fb',
     glow: 'rgba(240,147,251,0.5)',
-    paintingIds: ['lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia','sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez','kandinsky','klimt'],
+    paintingIds: ['lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia','sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez','lewitt','kandinsky','klimt'],
   },
   {
     id: 'america',
@@ -71,6 +71,7 @@ const PAINTING_COLOR: Record<string, string> = {
   munch:     '#FF6B6B', velazquez: '#C8A882', kandinsky: '#8B5CF6',
   klimt:     '#FFD700', hokusai:   '#4CC9F0', kusama:    '#F6C90E',
   homer:     '#57CC99', sargent:   '#FF6B6B', ndebele:   '#57CC99',
+  lewitt:    '#E63946',
 }
 
 export default function WorldMap() {
