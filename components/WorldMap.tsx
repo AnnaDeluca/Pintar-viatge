@@ -7,86 +7,95 @@ import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 're
 import { paintings } from '@/data/paintings'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+const MIN_ZOOM = 1
+const MAX_ZOOM = 10
+const CLUSTER_THRESHOLD = 2.5  // zoom > X → mostra pins individuals
 
-// Tots els quadres europeus junts, "França" integrat a Europa
-const PINS = [
+// Clusters de regions per a zoom baix
+const CLUSTERS = [
   {
     id: 'europa',
     label: 'Europa',
-    coords: [15, 50] as [number, number],
-    paintingIds: ['lascaux', 'vangogh', 'matisse', 'mondrian', 'kandinsky', 'klimt', 'kahlo'],
-    emoji: '🎨',
+    coords: [12, 50] as [number, number],
     color: '#f093fb',
     glow: 'rgba(240,147,251,0.5)',
+    paintingIds: ['lascaux','renoir','matisse','botticelli','vangogh','vermeer','mondrian','munch','velazquez','kandinsky','klimt'],
   },
   {
     id: 'japo',
     label: 'Japó',
     coords: [138, 36] as [number, number],
-    paintingIds: ['hokusai', 'kusama'],
-    emoji: '🌊',
     color: '#4CC9F0',
     glow: 'rgba(76,201,240,0.5)',
+    paintingIds: ['hokusai','kusama'],
   },
   {
-    id: 'sudafrica',
-    label: 'Sud-àfrica',
-    coords: [25, -30] as [number, number],
-    paintingIds: ['ndebele'],
-    emoji: '🏠',
+    id: 'africa',
+    label: 'Àfrica',
+    coords: [25, -26] as [number, number],
     color: '#57CC99',
     glow: 'rgba(87,204,153,0.5)',
+    paintingIds: ['ndebele'],
   },
 ]
 
 // Countries to highlight (ISO numeric)
 const HIGHLIGHT: Record<number, { fill: string; hover: string }> = {
-  250: { fill: '#4a2060', hover: '#6a2d88' }, // França
-  528: { fill: '#1e3d7a', hover: '#2a55aa' }, // Holanda
-  276: { fill: '#1e3d7a', hover: '#2a55aa' }, // Alemanya
-  40:  { fill: '#1e3d7a', hover: '#2a55aa' }, // Àustria
-  392: { fill: '#0a4a6b', hover: '#0d6a9b' }, // Japó
+  250: { fill: '#3d1a55', hover: '#5a2d7a' }, // França
+  380: { fill: '#1a3d6e', hover: '#2655a0' }, // Itàlia
+  528: { fill: '#1a3d6e', hover: '#2655a0' }, // Holanda
+  578: { fill: '#1a4d6e', hover: '#266090' }, // Noruega
+  724: { fill: '#6e1a1a', hover: '#a02626' }, // Espanya
+  276: { fill: '#1a3d6e', hover: '#2655a0' }, // Alemanya
+  40:  { fill: '#1a3d6e', hover: '#2655a0' }, // Àustria
+  392: { fill: '#0a3d5e', hover: '#0d5e8e' }, // Japó
   710: { fill: '#1a5c3a', hover: '#24844f' }, // Sud-àfrica
 }
 
-const MIN_ZOOM = 1
-const MAX_ZOOM = 8
+// Color per quadre individual
+const PAINTING_COLOR: Record<string, string> = {
+  lascaux:   '#C4A35A', renoir:    '#f093fb', matisse:   '#E63946',
+  botticelli:'#4CC9F0', vangogh:   '#F6C90E', vermeer:   '#AEE6FF',
+  mondrian:  '#E63946', munch:     '#FF6B6B', velazquez: '#8B4513',
+  kandinsky: '#8B5CF6', klimt:     '#FFD700', hokusai:   '#4CC9F0',
+  kusama:    '#F6C90E', ndebele:   '#57CC99',
+}
 
 export default function WorldMap() {
-  const [activePin, setActivePin] = useState<string | null>(null)
+  const [activeCluster, setActiveCluster] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [center, setCenter] = useState<[number, number]>([20, 10])
   const router = useRouter()
   const paintingMap = Object.fromEntries(paintings.map(p => [p.id, p]))
 
-  const handlePin = (pin: typeof PINS[0]) => {
-    if (pin.paintingIds.length === 1) {
-      router.push(`/pintar/${pin.paintingIds[0]}`)
+  const showIndividual = zoom >= CLUSTER_THRESHOLD
+
+  const handleCluster = (id: string, paintingIds: string[]) => {
+    if (paintingIds.length === 1) {
+      router.push(`/pintar/${paintingIds[0]}`)
     } else {
-      setActivePin(prev => prev === pin.id ? null : pin.id)
+      setActiveCluster(prev => prev === id ? null : id)
     }
   }
 
-  const activeData = activePin ? PINS.find(p => p.id === activePin) : null
+  const activeData = activeCluster ? CLUSTERS.find(c => c.id === activeCluster) : null
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: 0 }}>
-      {/* Mapa ─ absolute per omplir tot l'espai disponible */}
       <div className="absolute inset-0">
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{ scale: 125, center: [20, 10] }}
           style={{ width: '100%', height: '100%' }}
         >
-          {/* Ocean gradient via rect */}
-          <rect width="800" height="600" fill="url(#oceanGrad)" />
-
           <defs>
             <radialGradient id="oceanGrad" cx="50%" cy="50%" r="80%">
               <stop offset="0%" stopColor="#0d3b5e" />
               <stop offset="100%" stopColor="#071a2e" />
             </radialGradient>
           </defs>
+
+          <rect width="800" height="600" fill="url(#oceanGrad)" />
 
           <ZoomableGroup
             zoom={zoom}
@@ -96,134 +105,153 @@ export default function WorldMap() {
             onMoveEnd={({ zoom: z, coordinates }: { zoom: number; coordinates: [number, number] }) => {
               setZoom(z)
               setCenter(coordinates)
+              if (z < CLUSTER_THRESHOLD) setActiveCluster(null)
             }}
           >
-          <Geographies geography={GEO_URL}>
-            {({ geographies }: { geographies: any[] }) =>
-              geographies.map((geo: any) => {
-                const h = HIGHLIGHT[Number(geo.id)]
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={h?.fill ?? '#1e4d2b'}
-                    stroke="#0d2518"
-                    strokeWidth={0.4 / zoom}
-                    style={{
-                      default: { outline: 'none' },
-                      hover:   { outline: 'none', fill: h?.hover ?? '#2a6b3c', cursor: 'default' },
-                      pressed: { outline: 'none' },
-                    }}
-                  />
-                )
-              })
-            }
-          </Geographies>
+            <Geographies geography={GEO_URL}>
+              {({ geographies }: { geographies: any[] }) =>
+                geographies.map((geo: any) => {
+                  const h = HIGHLIGHT[Number(geo.id)]
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill={h?.fill ?? '#1e4d2b'}
+                      stroke="#0a1f12"
+                      strokeWidth={0.4 / zoom}
+                      style={{
+                        default: { outline: 'none' },
+                        hover:   { outline: 'none', fill: h?.hover ?? '#2a6b3c', cursor: 'default' },
+                        pressed: { outline: 'none' },
+                      }}
+                    />
+                  )
+                })
+              }
+            </Geographies>
 
-          {PINS.map(pin => {
-            const isActive = activePin === pin.id
-            const s = 1 / zoom  // escala inversa per mantenir mida dels pins
-            return (
-              <Marker
-                key={pin.id}
-                coordinates={pin.coords}
-                onClick={() => handlePin(pin)}
-                style={{ cursor: 'pointer' }}
-              >
-                <g transform={`scale(${s})`}>
-                  {/* Zona de click invisible gran */}
-                  <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
-                  {/* Pulsing glow */}
-                  <circle r={28} fill={pin.glow} opacity={0.25} style={{ pointerEvents: 'none' }} />
-                  <circle r={20} fill={pin.glow} opacity={0.35} style={{ pointerEvents: 'none' }} />
-                  {/* Pin */}
-                  <circle r={14}
-                    fill={isActive ? '#ffffff' : pin.color}
-                    stroke="white" strokeWidth={2.5}
-                    style={{ filter: `drop-shadow(0 2px 8px ${pin.glow})` }}
-                  />
-                  <text textAnchor="middle" y={5} fontSize={12}
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                    {pin.emoji}
-                  </text>
-                  {/* Label */}
-                  <rect x={-28} y={18} width={56} height={16} rx={8} fill="rgba(0,0,0,0.6)" />
-                  <text textAnchor="middle" y={30} fontSize={9} fill="white"
-                    style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                    {pin.label}
-                  </text>
-                  {/* Badge recompte */}
-                  {pin.paintingIds.length > 1 && (
-                    <>
-                      <circle cx={12} cy={-12} r={9} fill="#F6C90E" stroke="white" strokeWidth={2} />
-                      <text x={12} y={-8} textAnchor="middle" fontSize={9} fill="#1A1A1A"
-                        style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                        {pin.paintingIds.length}
-                      </text>
-                    </>
-                  )}
-                </g>
-              </Marker>
-            )
-          })}
+            {/* Pins individuals (zoom alt) */}
+            {showIndividual && paintings.filter(p => p.coords).map(p => {
+              const color = PAINTING_COLOR[p.id] ?? '#ffffff'
+              const s = 1 / zoom
+              return (
+                <Marker
+                  key={p.id}
+                  coordinates={p.coords!}
+                  onClick={() => router.push(`/pintar/${p.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <g transform={`scale(${s})`}>
+                    <circle r={22} fill={color} opacity={0.2} />
+                    <circle r={14} fill={color} stroke="white" strokeWidth={2}
+                      style={{ filter: `drop-shadow(0 1px 4px ${color})` }}
+                    />
+                    <text textAnchor="middle" y={5} fontSize={10}
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                      {p.emoji}
+                    </text>
+                    {zoom >= 4 && (
+                      <>
+                        <rect x={-30} y={17} width={60} height={14} rx={7} fill="rgba(0,0,0,0.7)" />
+                        <text textAnchor="middle" y={28} fontSize={8} fill="white"
+                          style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                          {p.title.length > 14 ? p.title.slice(0, 13) + '…' : p.title}
+                        </text>
+                      </>
+                    )}
+                  </g>
+                </Marker>
+              )
+            })}
+
+            {/* Pins agrupats (zoom baix) */}
+            {!showIndividual && CLUSTERS.map(cl => {
+              const isActive = activeCluster === cl.id
+              const count = cl.paintingIds.filter(id => paintingMap[id]).length
+              const s = 1 / zoom
+              return (
+                <Marker
+                  key={cl.id}
+                  coordinates={cl.coords}
+                  onClick={() => handleCluster(cl.id, cl.paintingIds)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <g transform={`scale(${s})`}>
+                    <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
+                    <circle r={28} fill={cl.glow} opacity={0.2} style={{ pointerEvents: 'none' }} />
+                    <circle r={18} fill={cl.glow} opacity={0.3} style={{ pointerEvents: 'none' }} />
+                    <circle r={13} fill={isActive ? '#fff' : cl.color} stroke="white" strokeWidth={2.5}
+                      style={{ filter: `drop-shadow(0 2px 8px ${cl.glow})` }}
+                    />
+                    <text textAnchor="middle" y={4} fontSize={11} style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                      🎨
+                    </text>
+                    <rect x={-26} y={17} width={52} height={14} rx={7} fill="rgba(0,0,0,0.6)" />
+                    <text textAnchor="middle" y={28} fontSize={8} fill="white"
+                      style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                      {cl.label}
+                    </text>
+                    <circle cx={11} cy={-11} r={9} fill="#F6C90E" stroke="white" strokeWidth={2} />
+                    <text x={11} y={-7} textAnchor="middle" fontSize={9} fill="#1A1A1A"
+                      style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                      {count}
+                    </text>
+                  </g>
+                </Marker>
+              )
+            })}
           </ZoomableGroup>
         </ComposableMap>
       </div>
 
+      {/* Hint zoom */}
+      {!showIndividual && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full text-xs text-white/50 pointer-events-none"
+          style={{ background: 'rgba(0,0,0,0.4)', fontFamily: 'Nunito,sans-serif', backdropFilter: 'blur(8px)' }}>
+          Fes zoom per veure cada obra
+        </div>
+      )}
+
       {/* Botons zoom */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-2" style={{ zIndex: 10 }}>
-        <button
-          onClick={() => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))}
+        <button onClick={() => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))}
           className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
           style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
           +
         </button>
-        <button
-          onClick={() => setZoom(z => Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2)))}
+        <button onClick={() => setZoom(z => Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2)))}
           className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
           style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
           −
         </button>
-        {zoom > 1.1 && (
-          <button
-            onClick={() => { setZoom(1); setCenter([20, 10]) }}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm active:scale-90 transition-transform"
+        {zoom > 1.2 && (
+          <button onClick={() => { setZoom(1); setCenter([20, 10]) }}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg active:scale-90 transition-transform"
             style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
             🌍
           </button>
         )}
       </div>
 
-      {/* Popup quadres */}
-      {activeData && (
-        <div
-          className="absolute inset-x-3 bottom-3 rounded-3xl overflow-hidden"
-          style={{
-            background: 'rgba(8,14,26,0.96)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-          }}
-        >
-          {/* Header popup */}
+      {/* Popup cluster (zoom baix) */}
+      {activeData && !showIndividual && (
+        <div className="absolute inset-x-3 bottom-3 rounded-3xl overflow-hidden"
+          style={{ background: 'rgba(8,14,26,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             <div>
               <p className="text-white font-bold text-sm" style={{ fontFamily: "'Fredoka One',cursive" }}>
-                {activeData.emoji} {activeData.label}
+                🎨 {activeData.label}
               </p>
               <p className="text-white/40 text-xs" style={{ fontFamily: 'Nunito,sans-serif' }}>
-                Tria un quadre per pintar
+                Tria un quadre · o fes zoom per veure'ls al mapa
               </p>
             </div>
-            <button
-              onClick={() => setActivePin(null)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
+            <button onClick={() => setActiveCluster(null)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 transition-colors"
               style={{ background: 'rgba(255,255,255,0.08)', fontSize: 16 }}>
               ×
             </button>
           </div>
-
-          {/* Quadres grid */}
           <div className="flex gap-2.5 px-3 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {activeData.paintingIds.map(id => {
               const p = paintingMap[id]
@@ -231,27 +259,19 @@ export default function WorldMap() {
               return (
                 <Link key={id} href={`/pintar/${id}`}
                   className="shrink-0 rounded-2xl overflow-hidden active:scale-95 transition-transform"
-                  style={{
-                    width: 120,
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}>
-                  <div className="h-20 overflow-hidden">
+                  style={{ width: 110, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div className="h-16 overflow-hidden">
                     {p.thumbUrl
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={p.thumbUrl} alt={p.title} className="w-full h-full object-cover" />
-                      : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl"
-                          style={{ background: 'linear-gradient(135deg,#1a1a3a,#2d1a4a)' }}>
-                          {p.emoji}
-                        </div>
-                      )
+                      : <div className="w-full h-full flex items-center justify-center text-3xl"
+                          style={{ background: 'linear-gradient(135deg,#1a1a3a,#2d1a4a)' }}>{p.emoji}</div>
                     }
                   </div>
-                  <div className="px-2 py-2">
+                  <div className="px-2 py-1.5">
                     <p className="text-white text-xs font-bold leading-tight truncate"
                       style={{ fontFamily: "'Fredoka One',cursive" }}>{p.title}</p>
-                    <p className="text-white/45 text-xs truncate mt-0.5"
+                    <p className="text-white/40 text-xs truncate mt-0.5"
                       style={{ fontFamily: 'Nunito,sans-serif' }}>{p.artist}</p>
                   </div>
                 </Link>

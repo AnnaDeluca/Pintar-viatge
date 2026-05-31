@@ -12,10 +12,11 @@ export interface PaintingMeta {
   mechanic?: 'fill' | 'dots'
   imageUrl?: string
   thumbUrl?: string
+  coords?: [number, number]  // [longitud, latitud] per al mapa
 }
 
 export const paintings: PaintingMeta[] = [
-  // ── Prehistoria ──────────────────────────────────────────────
+  // ── Prehistòria ────────────────────────────────────────────────
   {
     id: 'lascaux',
     title: 'El bisó',
@@ -29,8 +30,9 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/lascaux.jpg',
     thumbUrl: '/paintings/lascaux-thumb.jpg',
+    coords: [1.1, 45.0],
   },
-  // ── Asia ─────────────────────────────────────────────────────
+  // ── Àsia ───────────────────────────────────────────────────────
   {
     id: 'hokusai',
     title: 'La gran ona',
@@ -44,6 +46,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/hokusai.jpg',
     thumbUrl: '/paintings/hokusai-thumb.jpg',
+    coords: [139.7, 35.7],
   },
   {
     id: 'kusama',
@@ -57,10 +60,11 @@ export const paintings: PaintingMeta[] = [
     palette: ['#1A1A1A','#E63946','#2364AA','#57CC99','#8B5CF6','#F4A261','#F6C90E','#FF6B6B'],
     regions: [],
     mechanic: 'dots',
+    coords: [139.7, 36.0],
   },
-  // ── Amèrica Llatina ────────────────────────────────────────────
+  // ── Europa ─────────────────────────────────────────────────────
   {
-    id: 'kahlo',
+    id: 'renoir',
     title: 'Bal du Moulin de la Galette',
     artist: 'Pierre-Auguste Renoir',
     year: 1876,
@@ -72,21 +76,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/kahlo.jpg',
     thumbUrl: '/paintings/kahlo-thumb.jpg',
-  },
-  // ── Europa ────────────────────────────────────────────────────
-  {
-    id: 'vangogh',
-    title: 'Els girasols',
-    artist: 'Vincent van Gogh',
-    year: 1888,
-    country: 'Holanda',
-    flag: '🇳🇱',
-    emoji: '🌻',
-    funFact: 'El Van Gogh va pintar girasols perquè li encantava el sol del sud de França.',
-    palette: ['#F6C90E','#F4A261','#A0522D','#E63946','#4CC9F0','#57CC99','#8B6914','#FFD700'],
-    regions: [],
-    imageUrl: '/paintings/vangogh.jpg',
-    thumbUrl: '/paintings/vangogh-thumb.jpg',
+    coords: [2.3, 48.9],
   },
   {
     id: 'matisse',
@@ -101,6 +91,52 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/matisse.jpg',
     thumbUrl: '/paintings/matisse-thumb.jpg',
+    coords: [2.4, 47.5],
+  },
+  {
+    id: 'botticelli',
+    title: 'El naixement de Venus',
+    artist: 'Sandro Botticelli',
+    year: 1485,
+    country: 'Itàlia',
+    flag: '🇮🇹',
+    emoji: '🐚',
+    funFact: 'La Venus de Botticelli mesura 2 metres d\'alçada! La van pintar per a una família molt rica de Florència.',
+    palette: ['#4CC9F0','#AEE6FF','#F5DEB3','#E63946','#F4A261','#57CC99','#8B4513','#FFD700'],
+    regions: [],
+    imageUrl: '/paintings/botticelli.jpg',
+    thumbUrl: '/paintings/botticelli-thumb.jpg',
+    coords: [11.2, 43.8],
+  },
+  {
+    id: 'vangogh',
+    title: 'Els girasols',
+    artist: 'Vincent van Gogh',
+    year: 1888,
+    country: 'Holanda',
+    flag: '🇳🇱',
+    emoji: '🌻',
+    funFact: 'El Van Gogh va pintar girasols perquè li encantava el sol del sud de França.',
+    palette: ['#F6C90E','#F4A261','#A0522D','#E63946','#4CC9F0','#57CC99','#8B6914','#FFD700'],
+    regions: [],
+    imageUrl: '/paintings/vangogh.jpg',
+    thumbUrl: '/paintings/vangogh-thumb.jpg',
+    coords: [4.9, 52.4],
+  },
+  {
+    id: 'vermeer',
+    title: 'Noia amb arracada de perla',
+    artist: 'Johannes Vermeer',
+    year: 1665,
+    country: 'Holanda',
+    flag: '🇳🇱',
+    emoji: '💎',
+    funFact: 'Ningú sap qui és la noia del quadre. Pot ser la filla de Vermeer, o potser es va inventar!',
+    palette: ['#1A1A2E','#4CC9F0','#F5DEB3','#FFFFFF','#8B6914','#2364AA','#E8D5B7','#0A3060'],
+    regions: [],
+    imageUrl: '/paintings/vermeer.jpg',
+    thumbUrl: '/paintings/vermeer-thumb.jpg',
+    coords: [4.4, 52.0],
   },
   {
     id: 'mondrian',
@@ -115,6 +151,37 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/mondrian.jpg',
     thumbUrl: '/paintings/mondrian-thumb.jpg',
+    coords: [4.9, 52.2],
+  },
+  {
+    id: 'munch',
+    title: 'El crit',
+    artist: 'Edvard Munch',
+    year: 1893,
+    country: 'Noruega',
+    flag: '🇳🇴',
+    emoji: '😱',
+    funFact: 'El Munch va dir que va sentir "un crit infinit de la natura" mentre passejava. Va pintar el cel de vermell per mostrar la por!',
+    palette: ['#E63946','#F4A261','#F6C90E','#1A1A2E','#4CC9F0','#8B4513','#FF6B6B','#0A3060'],
+    regions: [],
+    imageUrl: '/paintings/munch.jpg',
+    thumbUrl: '/paintings/munch-thumb.jpg',
+    coords: [10.7, 59.9],
+  },
+  {
+    id: 'velazquez',
+    title: 'Les Menines',
+    artist: 'Diego Velázquez',
+    year: 1656,
+    country: 'Espanya',
+    flag: '🇪🇸',
+    emoji: '👑',
+    funFact: 'En aquest quadre, el pintor es va retratar a ell mateix pintant! Es veu al fons amb el pinzell.',
+    palette: ['#1A1A2E','#8B4513','#F5DEB3','#E63946','#2364AA','#4CC9F0','#654321','#C8A882'],
+    regions: [],
+    imageUrl: '/paintings/velazquez.jpg',
+    thumbUrl: '/paintings/velazquez-thumb.jpg',
+    coords: [-3.7, 40.4],
   },
   {
     id: 'kandinsky',
@@ -129,6 +196,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/kandinsky.jpg',
     thumbUrl: '/paintings/kandinsky-thumb.jpg',
+    coords: [11.6, 48.1],
   },
   {
     id: 'klimt',
@@ -143,8 +211,9 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/klimt.jpg',
     thumbUrl: '/paintings/klimt-thumb.jpg',
+    coords: [16.4, 48.2],
   },
-  // ── Àfrica ────────────────────────────────────────────────────
+  // ── Àfrica ─────────────────────────────────────────────────────
   {
     id: 'ndebele',
     title: 'Casa decorada',
@@ -158,6 +227,7 @@ export const paintings: PaintingMeta[] = [
     regions: ['wall','frieze','tri1','tri2','tri3','tri4','left','right','center','door','base'],
     imageUrl: '/paintings/ndebele.jpg',
     thumbUrl: '/paintings/ndebele-thumb.jpg',
+    coords: [28.0, -26.0],
   },
 ]
 

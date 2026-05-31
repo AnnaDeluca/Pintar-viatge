@@ -123,19 +123,29 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         edge.width  = W; edge.height  = H
 
         try {
-          const tmp = document.createElement('canvas')
-          tmp.width = W; tmp.height = H
-          const tc = tmp.getContext('2d')!
-          tc.drawImage(img, 0, 0, W, H)
-          const src = tc.getImageData(0, 0, W, H)
-          maskData.current = new Uint8ClampedArray(src.data)
+          // Canvas per la màscara de flood fill (imatge neta sense blur)
+          const maskCanvas = document.createElement('canvas')
+          maskCanvas.width = W; maskCanvas.height = H
+          const mc = maskCanvas.getContext('2d')!
+          mc.drawImage(img, 0, 0, W, H)
+          const maskSrc = mc.getImageData(0, 0, W, H)
+          maskData.current = new Uint8ClampedArray(maskSrc.data)
+
+          // Canvas per Sobel: amb blur per eliminar soroll i obtenir contorns nets
+          const blurCanvas = document.createElement('canvas')
+          blurCanvas.width = W; blurCanvas.height = H
+          const bc = blurCanvas.getContext('2d')!
+          bc.filter = 'blur(2px)'
+          bc.drawImage(img, 0, 0, W, H)
+          bc.filter = 'none'
+          const blurSrc = bc.getImageData(0, 0, W, H)
 
           const pc = paint.getContext('2d')!
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
           const ec = edge.getContext('2d')!
-          ec.putImageData(sobelEdges(src, 12), 0, 0)
+          ec.putImageData(sobelEdges(blurSrc, 18), 0, 0)
         } catch (err) {
           const pc = paint.getContext('2d')
           if (pc) pc.drawImage(img, 0, 0, W, H)
