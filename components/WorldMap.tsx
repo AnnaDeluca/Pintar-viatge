@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
 import { paintings } from '@/data/paintings'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
@@ -49,8 +49,13 @@ const HIGHLIGHT: Record<number, { fill: string; hover: string }> = {
   710: { fill: '#1a5c3a', hover: '#24844f' }, // Sud-àfrica
 }
 
+const MIN_ZOOM = 1
+const MAX_ZOOM = 8
+
 export default function WorldMap() {
   const [activePin, setActivePin] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [center, setCenter] = useState<[number, number]>([20, 10])
   const router = useRouter()
   const paintingMap = Object.fromEntries(paintings.map(p => [p.id, p]))
 
@@ -83,6 +88,16 @@ export default function WorldMap() {
             </radialGradient>
           </defs>
 
+          <ZoomableGroup
+            zoom={zoom}
+            center={center}
+            minZoom={MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+            onMoveEnd={({ zoom: z, coordinates }: { zoom: number; coordinates: [number, number] }) => {
+              setZoom(z)
+              setCenter(coordinates)
+            }}
+          >
           <Geographies geography={GEO_URL}>
             {({ geographies }: { geographies: any[] }) =>
               geographies.map((geo: any) => {
@@ -93,7 +108,7 @@ export default function WorldMap() {
                     geography={geo}
                     fill={h?.fill ?? '#1e4d2b'}
                     stroke="#0d2518"
-                    strokeWidth={0.4}
+                    strokeWidth={0.4 / zoom}
                     style={{
                       default: { outline: 'none' },
                       hover:   { outline: 'none', fill: h?.hover ?? '#2a6b3c', cursor: 'default' },
@@ -107,6 +122,7 @@ export default function WorldMap() {
 
           {PINS.map(pin => {
             const isActive = activePin === pin.id
+            const s = 1 / zoom  // escala inversa per mantenir mida dels pins
             return (
               <Marker
                 key={pin.id}
@@ -114,70 +130,68 @@ export default function WorldMap() {
                 onClick={() => handlePin(pin)}
                 style={{ cursor: 'pointer' }}
               >
-                {/* Zona de click invisible gran */}
-                <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
-                {/* Pulsing glow rings */}
-                <circle r={28} fill={pin.glow} opacity={0.25} style={{ pointerEvents: 'none' }} />
-                <circle r={20} fill={pin.glow} opacity={0.35} style={{ pointerEvents: 'none' }} />
-
-                {/* Pin body */}
-                <circle r={14}
-                  fill={isActive ? '#ffffff' : pin.color}
-                  stroke="white"
-                  strokeWidth={2.5}
-                  style={{ filter: `drop-shadow(0 2px 8px ${pin.glow})` }}
-                />
-
-                {/* Emoji */}
-                <text
-                  textAnchor="middle"
-                  y={5}
-                  fontSize={12}
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                  {pin.emoji}
-                </text>
-
-                {/* Label amb fons */}
-                <rect
-                  x={-28} y={18}
-                  width={56} height={16}
-                  rx={8}
-                  fill="rgba(0,0,0,0.55)"
-                />
-                <text
-                  textAnchor="middle"
-                  y={30}
-                  fontSize={9}
-                  fill="white"
-                  style={{
-                    fontFamily: 'Nunito,sans-serif',
-                    fontWeight: 800,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  }}
-                >
-                  {pin.label}
-                </text>
-
-                {/* Badge recompte */}
-                {pin.paintingIds.length > 1 && (
-                  <>
-                    <circle cx={12} cy={-12} r={9}
-                      fill="#F6C90E"
-                      stroke="white"
-                      strokeWidth={2}
-                    />
-                    <text x={12} y={-8} textAnchor="middle" fontSize={9} fill="#1A1A1A"
-                      style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                      {pin.paintingIds.length}
-                    </text>
-                  </>
-                )}
+                <g transform={`scale(${s})`}>
+                  {/* Zona de click invisible gran */}
+                  <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
+                  {/* Pulsing glow */}
+                  <circle r={28} fill={pin.glow} opacity={0.25} style={{ pointerEvents: 'none' }} />
+                  <circle r={20} fill={pin.glow} opacity={0.35} style={{ pointerEvents: 'none' }} />
+                  {/* Pin */}
+                  <circle r={14}
+                    fill={isActive ? '#ffffff' : pin.color}
+                    stroke="white" strokeWidth={2.5}
+                    style={{ filter: `drop-shadow(0 2px 8px ${pin.glow})` }}
+                  />
+                  <text textAnchor="middle" y={5} fontSize={12}
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                    {pin.emoji}
+                  </text>
+                  {/* Label */}
+                  <rect x={-28} y={18} width={56} height={16} rx={8} fill="rgba(0,0,0,0.6)" />
+                  <text textAnchor="middle" y={30} fontSize={9} fill="white"
+                    style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                    {pin.label}
+                  </text>
+                  {/* Badge recompte */}
+                  {pin.paintingIds.length > 1 && (
+                    <>
+                      <circle cx={12} cy={-12} r={9} fill="#F6C90E" stroke="white" strokeWidth={2} />
+                      <text x={12} y={-8} textAnchor="middle" fontSize={9} fill="#1A1A1A"
+                        style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
+                        {pin.paintingIds.length}
+                      </text>
+                    </>
+                  )}
+                </g>
               </Marker>
             )
           })}
+          </ZoomableGroup>
         </ComposableMap>
+      </div>
+
+      {/* Botons zoom */}
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2" style={{ zIndex: 10 }}>
+        <button
+          onClick={() => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
+          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+          +
+        </button>
+        <button
+          onClick={() => setZoom(z => Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2)))}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
+          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+          −
+        </button>
+        {zoom > 1.1 && (
+          <button
+            onClick={() => { setZoom(1); setCenter([20, 10]) }}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm active:scale-90 transition-transform"
+            style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            🌍
+          </button>
+        )}
       </div>
 
       {/* Popup quadres */}
