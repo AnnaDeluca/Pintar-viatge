@@ -19,7 +19,15 @@ const CLUSTERS = [
     coords: [12, 50] as [number, number],
     color: '#f093fb',
     glow: 'rgba(240,147,251,0.5)',
-    paintingIds: ['lascaux','renoir','matisse','botticelli','vangogh','vermeer','mondrian','munch','velazquez','kandinsky','klimt'],
+    paintingIds: ['lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia','sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez','kandinsky','klimt'],
+  },
+  {
+    id: 'america',
+    label: 'Amèrica',
+    coords: [-85, 40] as [number, number],
+    color: '#F6C90E',
+    glow: 'rgba(246,201,14,0.5)',
+    paintingIds: ['homer','sargent'],
   },
   {
     id: 'japo',
@@ -50,15 +58,19 @@ const HIGHLIGHT: Record<number, { fill: string; hover: string }> = {
   40:  { fill: '#1a3d6e', hover: '#2655a0' }, // Àustria
   392: { fill: '#0a3d5e', hover: '#0d5e8e' }, // Japó
   710: { fill: '#1a5c3a', hover: '#24844f' }, // Sud-àfrica
+  840: { fill: '#4a3d1a', hover: '#6e5a26' }, // EUA
+  826: { fill: '#1a3d6e', hover: '#2655a0' }, // Regne Unit (Sargent)
 }
 
 // Color per quadre individual
 const PAINTING_COLOR: Record<string, string> = {
   lascaux:   '#C4A35A', renoir:    '#f093fb', matisse:   '#E63946',
-  botticelli:'#4CC9F0', vangogh:   '#F6C90E', vermeer:   '#AEE6FF',
-  mondrian:  '#E63946', munch:     '#FF6B6B', velazquez: '#8B4513',
-  kandinsky: '#8B5CF6', klimt:     '#FFD700', hokusai:   '#4CC9F0',
-  kusama:    '#F6C90E', ndebele:   '#57CC99',
+  morisot:   '#AEE6FF', vigee:     '#57CC99', botticelli:'#4CC9F0',
+  artemisia: '#E63946', sofonisba: '#8B5CF6', vangogh:   '#F6C90E',
+  cassatt:   '#AEE6FF', vermeer:   '#E8D5B7', mondrian:  '#E63946',
+  munch:     '#FF6B6B', velazquez: '#C8A882', kandinsky: '#8B5CF6',
+  klimt:     '#FFD700', hokusai:   '#4CC9F0', kusama:    '#F6C90E',
+  homer:     '#57CC99', sargent:   '#FF6B6B', ndebele:   '#57CC99',
 }
 
 export default function WorldMap() {

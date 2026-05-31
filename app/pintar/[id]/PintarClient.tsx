@@ -119,17 +119,18 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           )}
         </div>
 
-        {/* Miniatura original sempre visible */}
+        {/* Miniatura original — responsive: més gran en pantalles amples */}
         {painting.imageUrl && !isDots && (
-          <div className="flex flex-col items-center gap-1 shrink-0 justify-center" style={{ width: 76 }}>
+          <div className="flex flex-col items-center gap-1.5 shrink-0 justify-center"
+            style={{ width: 'clamp(72px, 14vw, 160px)' }}>
             <p className="text-white/40 text-center"
-              style={{ fontSize: 8, fontFamily: 'Nunito,sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              style={{ fontSize: 'clamp(7px, 1.2vw, 10px)', fontFamily: 'Nunito,sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Original
             </p>
             <button
               onClick={() => setShowOriginal(true)}
-              className="w-full rounded-xl overflow-hidden shadow-xl active:scale-95 transition-transform"
-              style={{ border: '2px solid rgba(255,255,255,0.2)' }}>
+              className="w-full rounded-2xl overflow-hidden shadow-xl active:scale-95 transition-transform"
+              style={{ border: '2px solid rgba(255,255,255,0.25)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={painting.thumbUrl || painting.imageUrl}
@@ -137,8 +138,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
                 className="w-full h-auto block"
               />
             </button>
-            <p className="text-white/20 text-center"
-              style={{ fontSize: 7, fontFamily: 'Nunito,sans-serif' }}>
+            <p className="text-white/25 text-center"
+              style={{ fontSize: 'clamp(6px, 1vw, 9px)', fontFamily: 'Nunito,sans-serif' }}>
               toca per ampliar
             </p>
           </div>
