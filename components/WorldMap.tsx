@@ -1,314 +1,392 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
-import { paintings } from '@/data/paintings'
+import { geoNaturalEarth1, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
+import type { Feature, FeatureCollection } from 'geojson'
+import { paintings, type PaintingMeta } from '@/data/paintings'
 
-const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
-const MIN_ZOOM = 1
-const MAX_ZOOM = 10
-const CLUSTER_THRESHOLD = 2.5  // zoom > X → mostra pins individuals
+// Tons del museu — mapeig de regió a pigment
+const TONE_HEX: Record<string, string> = {
+  terracotta: '#D85B3C',
+  ochre:      '#E0A52E',
+  prussian:   '#2E6A9E',
+  viridian:   '#4E8C6A',
+  plum:       '#7C5C9E',
+}
 
-// Clusters de regions per a zoom baix
-const CLUSTERS = [
+// Països ressaltats segons el seu pigment
+const HIGHLIGHT: Record<number, keyof typeof TONE_HEX> = {
+  250: 'terracotta', // França
+  380: 'terracotta', // Itàlia
+  528: 'terracotta', // Holanda
+  276: 'terracotta', // Alemanya
+  40:  'terracotta', // Àustria
+  578: 'terracotta', // Noruega
+  724: 'terracotta', // Espanya
+  392: 'prussian',   // Japó
+  710: 'viridian',   // Sud-àfrica
+  840: 'ochre',      // EUA
+  826: 'ochre',      // Regne Unit (Sargent)
+}
+
+interface Region {
+  id: string
+  label: string
+  emoji: string
+  coords: [number, number]   // [lon, lat]
+  tone: keyof typeof TONE_HEX
+  paintingIds: string[]
+}
+
+const REGIONS: Region[] = [
   {
-    id: 'europa',
-    label: 'Europa',
-    coords: [12, 50] as [number, number],
-    color: '#f093fb',
-    glow: 'rgba(240,147,251,0.5)',
-    paintingIds: ['lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia','sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez','lewitt','kandinsky','klimt'],
+    id: 'europa', label: 'Europa', emoji: '🎨',
+    coords: [11, 48], tone: 'terracotta',
+    paintingIds: [
+      'lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia',
+      'sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez',
+      'lewitt','kandinsky','klimt',
+    ],
   },
   {
-    id: 'america',
-    label: 'Amèrica',
-    coords: [-85, 40] as [number, number],
-    color: '#F6C90E',
-    glow: 'rgba(246,201,14,0.5)',
+    id: 'america', label: 'Amèrica', emoji: '🌾',
+    coords: [-85, 40], tone: 'ochre',
     paintingIds: ['homer','sargent'],
   },
   {
-    id: 'japo',
-    label: 'Japó',
-    coords: [138, 36] as [number, number],
-    color: '#4CC9F0',
-    glow: 'rgba(76,201,240,0.5)',
+    id: 'japo', label: 'Japó', emoji: '🌊',
+    coords: [138, 37], tone: 'prussian',
     paintingIds: ['hokusai','kusama'],
   },
   {
-    id: 'africa',
-    label: 'Àfrica',
-    coords: [25, -26] as [number, number],
-    color: '#57CC99',
-    glow: 'rgba(87,204,153,0.5)',
+    id: 'sudafrica', label: 'Sud-àfrica', emoji: '🏠',
+    coords: [25, -29], tone: 'viridian',
     paintingIds: ['ndebele'],
   },
 ]
 
-// Countries to highlight (ISO numeric)
-const HIGHLIGHT: Record<number, { fill: string; hover: string }> = {
-  250: { fill: '#3d1a55', hover: '#5a2d7a' }, // França
-  380: { fill: '#1a3d6e', hover: '#2655a0' }, // Itàlia
-  528: { fill: '#1a3d6e', hover: '#2655a0' }, // Holanda
-  578: { fill: '#1a4d6e', hover: '#266090' }, // Noruega
-  724: { fill: '#6e1a1a', hover: '#a02626' }, // Espanya
-  276: { fill: '#1a3d6e', hover: '#2655a0' }, // Alemanya
-  40:  { fill: '#1a3d6e', hover: '#2655a0' }, // Àustria
-  392: { fill: '#0a3d5e', hover: '#0d5e8e' }, // Japó
-  710: { fill: '#1a5c3a', hover: '#24844f' }, // Sud-àfrica
-  840: { fill: '#4a3d1a', hover: '#6e5a26' }, // EUA
-  826: { fill: '#1a3d6e', hover: '#2655a0' }, // Regne Unit (Sargent)
+interface GeoData {
+  paths: { d: string | null; tone: keyof typeof TONE_HEX | null }[]
+  pins: Record<string, [number, number]>
 }
 
-// Color per quadre individual
-const PAINTING_COLOR: Record<string, string> = {
-  lascaux:   '#C4A35A', renoir:    '#f093fb', matisse:   '#E63946',
-  morisot:   '#AEE6FF', vigee:     '#57CC99', botticelli:'#4CC9F0',
-  artemisia: '#E63946', sofonisba: '#8B5CF6', vangogh:   '#F6C90E',
-  cassatt:   '#AEE6FF', vermeer:   '#E8D5B7', mondrian:  '#E63946',
-  munch:     '#FF6B6B', velazquez: '#C8A882', kandinsky: '#8B5CF6',
-  klimt:     '#FFD700', hokusai:   '#4CC9F0', kusama:    '#F6C90E',
-  homer:     '#57CC99', sargent:   '#FF6B6B', ndebele:   '#57CC99',
-  lewitt:    '#E63946',
+function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean } {
+  const [geo, setGeo] = useState<GeoData | null>(null)
+  const [err, setErr] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    async function load() {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+        const topo = await res.json()
+        // @ts-expect-error topojson types loose
+        const fc = feature(topo, topo.objects.countries) as FeatureCollection
+        const proj = geoNaturalEarth1().fitSize([W, H], fc)
+        const path = geoPath(proj)
+        const paths = fc.features.map((f: Feature) => ({
+          d: path(f),
+          tone: HIGHLIGHT[Number((f as any).id)] ?? null,
+        }))
+        const pins: Record<string, [number, number]> = {}
+        REGIONS.forEach(r => {
+          const p = proj(r.coords)
+          if (p) pins[r.id] = p
+        })
+        if (alive) setGeo({ paths, pins })
+      } catch {
+        if (alive) setErr(true)
+      }
+    }
+    load()
+    return () => { alive = false }
+  }, [W, H])
+
+  return { geo, err }
+}
+
+interface PickerProps {
+  region: Region | null
+  paintingMap: Record<string, PaintingMeta>
+  onClose: () => void
+  onPick: (id: string) => void
+}
+
+function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
+  if (!region) return null
+  const hex = TONE_HEX[region.tone]
+  const items = region.paintingIds.map(id => paintingMap[id]).filter(Boolean)
+
+  return (
+    <div className="fixed inset-0 z-30">
+      {/* Scrim */}
+      <div onClick={onClose}
+        className="absolute inset-0"
+        style={{ background: 'rgba(20,26,34,0.32)', animation: 'fadeIn .2s ease' }} />
+      {/* Sheet */}
+      <div className="absolute left-0 right-0 bottom-0 pb-safe"
+        style={{
+          background: 'var(--paper-2)',
+          borderTopLeftRadius: 30, borderTopRightRadius: 30,
+          boxShadow: '0 -14px 40px rgba(35,50,62,0.25)',
+          paddingBottom: 30, animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)',
+          maxHeight: '78vh', overflowY: 'auto',
+        }}>
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2.5">
+          <div style={{ width: 42, height: 5, borderRadius: 5, background: 'var(--line)' }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 pt-3 pb-1">
+          <div className="flex items-center justify-center shrink-0"
+            style={{
+              width: 46, height: 46, borderRadius: 14, fontSize: 24,
+              background: `color-mix(in srgb, ${hex} 16%, white)`,
+              border: `1.5px solid color-mix(in srgb, ${hex} 40%, white)`,
+            }}>
+            {region.emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div style={{
+              fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, lineHeight: 1.1,
+              color: 'var(--ink)',
+            }}>
+              {region.label}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--ink-50)', marginTop: 1, fontFamily: 'var(--font-body)' }}>
+              Tria una obra per pintar
+            </div>
+          </div>
+          <button onClick={onClose}
+            className="flex items-center justify-center active:scale-90 transition-transform"
+            style={{
+              width: 34, height: 34, borderRadius: 17, border: 'none',
+              background: 'var(--paper)', color: 'var(--ink-50)', fontSize: 20,
+              boxShadow: 'inset 0 0 0 1px var(--line)',
+            }}>
+            ×
+          </button>
+        </div>
+
+        {/* Paintings */}
+        <div className="flex gap-3.5 px-5 pt-3.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {items.map(p => (
+            <button key={p.id} onClick={() => onPick(p.id)}
+              className="shrink-0 text-left active:scale-95 transition-transform"
+              style={{ width: 152, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}>
+              <div className="flex items-center justify-center overflow-hidden"
+                style={{
+                  width: 152, height: 120, borderRadius: 16, background: '#efe8d8',
+                  boxShadow: '0 8px 18px rgba(35,50,62,0.18), 0 0 0 1px var(--line)',
+                }}>
+                {p.thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.thumbUrl} alt={p.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: 46 }}>{p.emoji}</span>
+                )}
+              </div>
+              <div className="truncate" style={{
+                fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 700,
+                lineHeight: 1.12, marginTop: 9, color: 'var(--ink)',
+              }}>
+                {p.title}
+              </div>
+              <div className="truncate" style={{
+                fontSize: 12, color: 'var(--ink-50)', marginTop: 1, fontFamily: 'var(--font-body)',
+              }}>
+                {p.artist} · {p.year}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function WorldMap() {
-  const [activeCluster, setActiveCluster] = useState<string | null>(null)
-  // Restaurar zoom/centre de sessionStorage si existeix (en tornar d'un quadre)
-  const [zoom, setZoom] = useState(() => {
-    if (typeof window === 'undefined') return 1
-    const saved = sessionStorage.getItem('map-zoom')
-    return saved ? Number(saved) : 1
-  })
-  const [center, setCenter] = useState<[number, number]>(() => {
-    if (typeof window === 'undefined') return [20, 10]
-    const saved = sessionStorage.getItem('map-center')
-    return saved ? (JSON.parse(saved) as [number, number]) : [20, 10]
-  })
   const router = useRouter()
-  const paintingMap = Object.fromEntries(paintings.map(p => [p.id, p]))
+  const [region, setRegion] = useState<Region | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 380, h: 264 })
 
-  // Persistir zoom/centre quan canviï
+  // Mesura del contenidor (responsive)
   useEffect(() => {
-    sessionStorage.setItem('map-zoom', String(zoom))
-    sessionStorage.setItem('map-center', JSON.stringify(center))
-  }, [zoom, center])
-
-  const showIndividual = zoom >= CLUSTER_THRESHOLD
-
-  const handleCluster = (id: string, paintingIds: string[]) => {
-    if (paintingIds.length === 1) {
-      router.push(`/pintar/${paintingIds[0]}`)
-    } else {
-      setActiveCluster(prev => prev === id ? null : id)
+    if (!containerRef.current) return
+    const el = containerRef.current
+    const update = () => {
+      const w = el.clientWidth
+      const h = Math.max(180, Math.round(w * 0.62))
+      setDims({ w, h })
     }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const { geo, err } = useWorldMap(dims.w, dims.h)
+  const paintingMap = useMemo(
+    () => Object.fromEntries(paintings.map(p => [p.id, p])),
+    [],
+  )
+
+  const handlePick = (id: string) => {
+    router.push(`/pintar/${id}`)
   }
 
-  const activeData = activeCluster ? CLUSTERS.find(c => c.id === activeCluster) : null
+  // Ruta del viatge: Europa → Japó → Sud-àfrica
+  const route = geo ? ['europa', 'japo', 'sudafrica'].map(id => geo.pins[id]).filter(Boolean) : null
+  const routeD = route && route.length === 3
+    ? `M${route[0][0]},${route[0][1]} L${route[1][0]},${route[1][1]} L${route[2][0]},${route[2][1]}`
+    : ''
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: 0 }}>
-      <div className="absolute inset-0">
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{ scale: 125, center: [20, 10] }}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <defs>
-            <radialGradient id="oceanGrad" cx="50%" cy="50%" r="80%">
-              <stop offset="0%" stopColor="#0d3b5e" />
-              <stop offset="100%" stopColor="#071a2e" />
-            </radialGradient>
-          </defs>
+    <>
+      <div ref={containerRef}
+        className="relative w-full overflow-hidden"
+        style={{
+          borderRadius: 26,
+          background: 'var(--ocean)',
+          border: '1px solid var(--land-stroke)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 14px 30px rgba(35,50,62,0.14)',
+        }}>
+        <svg viewBox={`0 0 ${dims.w} ${dims.h}`} width="100%" style={{ display: 'block' }}>
+          {!geo && !err && (
+            <text x={dims.w / 2} y={dims.h / 2} textAnchor="middle" fontSize="12"
+              fill="var(--ink-50)" style={{ fontFamily: 'var(--font-body)' }}>
+              Desplegant el mapa…
+            </text>
+          )}
+          {err && (
+            <text x={dims.w / 2} y={dims.h / 2} textAnchor="middle" fontSize="11"
+              fill="var(--ink-50)" style={{ fontFamily: 'var(--font-body)' }}>
+              🌍 No s&apos;ha pogut carregar el mapa
+            </text>
+          )}
 
-          <rect width="800" height="600" fill="url(#oceanGrad)" />
-
-          <ZoomableGroup
-            zoom={zoom}
-            center={center}
-            minZoom={MIN_ZOOM}
-            maxZoom={MAX_ZOOM}
-            onMoveEnd={({ zoom: z, coordinates }: { zoom: number; coordinates: [number, number] }) => {
-              setZoom(z)
-              setCenter(coordinates)
-              if (z < CLUSTER_THRESHOLD) setActiveCluster(null)
-            }}
-          >
-            <Geographies geography={GEO_URL}>
-              {({ geographies }: { geographies: any[] }) =>
-                geographies.map((geo: any) => {
-                  const h = HIGHLIGHT[Number(geo.id)]
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={h?.fill ?? '#1e4d2b'}
-                      stroke="#0a1f12"
-                      strokeWidth={0.4 / zoom}
-                      style={{
-                        default: { outline: 'none' },
-                        hover:   { outline: 'none', fill: h?.hover ?? '#2a6b3c', cursor: 'default' },
-                        pressed: { outline: 'none' },
-                      }}
-                    />
-                  )
-                })
+          {/* Països */}
+          {geo && geo.paths.map((p, i) => (
+            <path key={i} d={p.d ?? ''}
+              fill={
+                p.tone
+                  ? `color-mix(in srgb, ${TONE_HEX[p.tone]} 34%, var(--land))`
+                  : 'var(--land)'
               }
-            </Geographies>
+              stroke="var(--land-stroke)"
+              strokeWidth={0.5}
+              strokeLinejoin="round" />
+          ))}
 
-            {/* Pins individuals (zoom alt) */}
-            {showIndividual && paintings.filter(p => p.coords).map(p => {
-              const color = PAINTING_COLOR[p.id] ?? '#ffffff'
-              const s = 1 / zoom
-              return (
-                <Marker
-                  key={p.id}
-                  coordinates={p.coords!}
-                  onClick={() => router.push(`/pintar/${p.id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <g transform={`scale(${s})`}>
-                    <circle r={22} fill={color} opacity={0.2} />
-                    <circle r={14} fill={color} stroke="white" strokeWidth={2}
-                      style={{ filter: `drop-shadow(0 1px 4px ${color})` }}
-                    />
-                    <text textAnchor="middle" y={5} fontSize={10}
-                      style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                      {p.emoji}
-                    </text>
-                    {zoom >= 4 && (
-                      <>
-                        <rect x={-30} y={17} width={60} height={14} rx={7} fill="rgba(0,0,0,0.7)" />
-                        <text textAnchor="middle" y={28} fontSize={8} fill="white"
-                          style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                          {p.title.length > 14 ? p.title.slice(0, 13) + '…' : p.title}
-                        </text>
-                      </>
-                    )}
-                  </g>
-                </Marker>
-              )
-            })}
+          {/* Ruta de viatge */}
+          {geo && routeD && (
+            <path d={routeD} fill="none" stroke="var(--ochre)"
+              strokeWidth={1.4} strokeDasharray="2 4" strokeLinecap="round" opacity={0.85} />
+          )}
 
-            {/* Pins agrupats (zoom baix) */}
-            {!showIndividual && CLUSTERS.map(cl => {
-              const isActive = activeCluster === cl.id
-              const count = cl.paintingIds.filter(id => paintingMap[id]).length
-              const s = 1 / zoom
-              return (
-                <Marker
-                  key={cl.id}
-                  coordinates={cl.coords}
-                  onClick={() => handleCluster(cl.id, cl.paintingIds)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <g transform={`scale(${s})`}>
-                    <circle r={36} fill="transparent" style={{ cursor: 'pointer' }} />
-                    <circle r={28} fill={cl.glow} opacity={0.2} style={{ pointerEvents: 'none' }} />
-                    <circle r={18} fill={cl.glow} opacity={0.3} style={{ pointerEvents: 'none' }} />
-                    <circle r={13} fill={isActive ? '#fff' : cl.color} stroke="white" strokeWidth={2.5}
-                      style={{ filter: `drop-shadow(0 2px 8px ${cl.glow})` }}
-                    />
-                    <text textAnchor="middle" y={4} fontSize={11} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                      🎨
-                    </text>
-                    <rect x={-26} y={17} width={52} height={14} rx={7} fill="rgba(0,0,0,0.6)" />
-                    <text textAnchor="middle" y={28} fontSize={8} fill="white"
-                      style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                      {cl.label}
-                    </text>
-                    <circle cx={11} cy={-11} r={9} fill="#F6C90E" stroke="white" strokeWidth={2} />
-                    <text x={11} y={-7} textAnchor="middle" fontSize={9} fill="#1A1A1A"
-                      style={{ fontWeight: 800, pointerEvents: 'none', userSelect: 'none' }}>
-                      {count}
-                    </text>
-                  </g>
-                </Marker>
-              )
-            })}
-          </ZoomableGroup>
-        </ComposableMap>
+          {/* Pins de regió */}
+          {geo && REGIONS.map(r => {
+            const p = geo.pins[r.id]
+            if (!p) return null
+            const hex = TONE_HEX[r.tone]
+            const count = r.paintingIds.filter(id => paintingMap[id]).length
+            return (
+              <g key={r.id} transform={`translate(${p[0]},${p[1]})`}
+                style={{ cursor: 'pointer' }} onClick={() => setRegion(r)}>
+                {/* Anell pulsant */}
+                <circle r={13} fill={hex} opacity={0.18}>
+                  <animate attributeName="r" values="13;26;13" dur="2.6s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.28;0;0.28" dur="2.6s" repeatCount="indefinite" />
+                </circle>
+                {/* Zona de click ampliada */}
+                <circle r={22} fill="transparent" />
+                {/* Medalló */}
+                <circle r={13} fill="#FFFCF4" stroke={hex} strokeWidth={3} />
+                <text textAnchor="middle" y={4.5} fontSize={13}
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                  {r.emoji}
+                </text>
+                {/* Badge recompte */}
+                <circle cx={10} cy={-10} r={7.5} fill="var(--ochre)" stroke="#FFFCF4" strokeWidth={2} />
+                <text x={10} y={-7} textAnchor="middle" fontSize={9} fill="#3a2a08"
+                  style={{ fontWeight: 800, pointerEvents: 'none', fontFamily: 'var(--font-body)' }}>
+                  {count}
+                </text>
+                {/* Etiqueta */}
+                <g transform="translate(0,30)">
+                  <rect x={-30} y={-11} width={60} height={18} rx={9}
+                    fill="rgba(255,252,244,0.92)" stroke="var(--line)" strokeWidth={1} />
+                  <text textAnchor="middle" y={2.5} fontSize={10} fill="var(--ink)"
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 700, pointerEvents: 'none' }}>
+                    {r.label}
+                  </text>
+                </g>
+              </g>
+            )
+          })}
+
+          {/* Rosa dels vents */}
+          {geo && (
+            <g transform={`translate(40,${dims.h - 42})`} opacity={0.9} style={{ pointerEvents: 'none' }}>
+              <circle r={14} fill="none" stroke="rgba(35,50,62,0.28)" strokeWidth={1} />
+              <circle r={2} fill="rgba(35,50,62,0.28)" />
+              <polygon points="0,-13 3,-2 0,0 -3,-2" fill="var(--terracotta)" />
+              <polygon points="0,13 3,2 0,0 -3,2" fill="rgba(35,50,62,0.28)" />
+              <polygon points="-13,0 -2,3 0,0 -2,-3" fill="rgba(35,50,62,0.28)" />
+              <polygon points="13,0 2,3 0,0 2,-3" fill="rgba(35,50,62,0.28)" />
+              <text x={0} y={-18} textAnchor="middle" fontSize={8} fill="rgba(35,50,62,0.28)"
+                style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                N
+              </text>
+            </g>
+          )}
+        </svg>
       </div>
 
-      {/* Hint zoom */}
-      {!showIndividual && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full text-xs text-white/50 pointer-events-none"
-          style={{ background: 'rgba(0,0,0,0.4)', fontFamily: 'Nunito,sans-serif', backdropFilter: 'blur(8px)' }}>
-          Fes zoom per veure cada obra
-        </div>
-      )}
-
-      {/* Botons zoom */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2" style={{ zIndex: 10 }}>
-        <button onClick={() => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-          +
-        </button>
-        <button onClick={() => setZoom(z => Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2)))}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold text-xl active:scale-90 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
-          −
-        </button>
-        {zoom > 1.05 && (
-          <button onClick={() => { setZoom(1); setCenter([20, 10]); setActiveCluster(null) }}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg active:scale-90 transition-transform"
-            style={{ background: 'rgba(245,87,108,0.25)', backdropFilter: 'blur(8px)', border: '1px solid rgba(245,87,108,0.4)' }}
-            title="Tornar a la vista global">
-            🌍
-          </button>
-        )}
-      </div>
-
-      {/* Popup cluster (zoom baix) */}
-      {activeData && !showIndividual && (
-        <div className="absolute inset-x-3 bottom-3 rounded-3xl overflow-hidden"
-          style={{ background: 'rgba(8,14,26,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <div>
-              <p className="text-white font-bold text-sm" style={{ fontFamily: "'Fredoka One',cursive" }}>
-                🎨 {activeData.label}
-              </p>
-              <p className="text-white/40 text-xs" style={{ fontFamily: 'Nunito,sans-serif' }}>
-                Tria un quadre · o fes zoom per veure'ls al mapa
-              </p>
-            </div>
-            <button onClick={() => setActiveCluster(null)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.08)', fontSize: 16 }}>
-              ×
+      {/* Chips de regió */}
+      <div className="flex flex-wrap justify-center gap-2 mt-4 px-2">
+        {REGIONS.map(r => {
+          const hex = TONE_HEX[r.tone]
+          const count = r.paintingIds.filter(id => paintingMap[id]).length
+          return (
+            <button key={r.id} onClick={() => setRegion(r)}
+              className="flex items-center gap-1.5 active:scale-95 transition-transform"
+              style={{
+                padding: '7px 13px 7px 9px', borderRadius: 999,
+                border: '1px solid var(--line)', background: 'var(--paper-2)',
+                boxShadow: '0 2px 6px rgba(35,50,62,0.06)',
+              }}>
+              <span className="flex items-center justify-center"
+                style={{
+                  width: 18, height: 18, borderRadius: 9, fontSize: 11,
+                  background: `color-mix(in srgb, ${hex} 18%, white)`,
+                }}>
+                {r.emoji}
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontSize: 13.5, fontWeight: 700, color: 'var(--ink)',
+              }}>
+                {r.label}
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: hex, fontFamily: 'var(--font-body)' }}>
+                {count}
+              </span>
             </button>
-          </div>
-          <div className="flex gap-2.5 px-3 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {activeData.paintingIds.map(id => {
-              const p = paintingMap[id]
-              if (!p) return null
-              return (
-                <Link key={id} href={`/pintar/${id}`}
-                  className="shrink-0 rounded-2xl overflow-hidden active:scale-95 transition-transform"
-                  style={{ width: 110, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div className="h-16 overflow-hidden">
-                    {p.thumbUrl
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={p.thumbUrl} alt={p.title} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-3xl"
-                          style={{ background: 'linear-gradient(135deg,#1a1a3a,#2d1a4a)' }}>{p.emoji}</div>
-                    }
-                  </div>
-                  <div className="px-2 py-1.5">
-                    <p className="text-white text-xs font-bold leading-tight truncate"
-                      style={{ fontFamily: "'Fredoka One',cursive" }}>{p.title}</p>
-                    <p className="text-white/40 text-xs truncate mt-0.5"
-                      style={{ fontFamily: 'Nunito,sans-serif' }}>{p.artist}</p>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+          )
+        })}
+      </div>
+
+      <PickerSheet
+        region={region}
+        paintingMap={paintingMap}
+        onClose={() => setRegion(null)}
+        onPick={handlePick}
+      />
+    </>
   )
 }

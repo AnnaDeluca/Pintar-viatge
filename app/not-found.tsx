@@ -2,35 +2,30 @@ import Link from 'next/link'
 
 export default function NotFound() {
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center"
-      style={{ background: 'linear-gradient(160deg,#0d0d1a 0%,#1a0d2e 50%,#0d1a2e 100%)' }}
-    >
-      <div className="text-8xl animate-bounce">🎨</div>
-      <h1
-        className="text-4xl md:text-5xl text-white"
-        style={{
-          fontFamily: "'Fredoka One',cursive",
-          background: 'linear-gradient(135deg,#f093fb,#f5576c,#4facfe)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}
-      >
+    <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-6 text-center"
+      style={{ background: 'var(--paper)' }}>
+      <div className="text-7xl" style={{ animation: 'bob 1.5s ease-in-out infinite' }}>🎨</div>
+      <h1 style={{
+        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30,
+        color: 'var(--ink)', margin: 0, lineHeight: 1.05, letterSpacing: '-0.01em',
+      }}>
         Ups! No trobem aquest quadre
       </h1>
-      <p className="text-white/50 text-base" style={{ fontFamily: 'Nunito,sans-serif' }}>
+      <p style={{
+        fontSize: 14.5, color: 'var(--ink-70)', fontFamily: 'var(--font-body)', margin: 0,
+        maxWidth: 280,
+      }}>
         Potser la pàgina no existeix o ha canviat d&apos;adreça.
       </p>
-      <Link
-        href="/"
-        className="px-6 py-3 rounded-2xl font-bold text-white text-base active:scale-90 transition-transform"
+      <Link href="/"
+        className="active:scale-95 transition-transform"
         style={{
-          background: 'linear-gradient(135deg,#f093fb,#f5576c)',
-          fontFamily: 'Nunito,sans-serif',
-          boxShadow: '0 4px 24px rgba(240,147,251,0.4)',
-        }}
-      >
-        ← Tornar a la galeria
+          padding: '12px 24px', borderRadius: 999, color: 'white',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
+          background: '#D85B3C',
+          boxShadow: '0 8px 20px rgba(216,91,60,0.4)',
+        }}>
+        ← Tornar a l&apos;atlas
       </Link>
     </div>
   )

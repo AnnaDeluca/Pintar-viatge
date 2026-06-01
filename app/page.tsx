@@ -1,50 +1,55 @@
 import WorldMap from '@/components/WorldMap'
+import { paintings } from '@/data/paintings'
+
+const ACCENT = '#D85B3C' // terracotta
 
 export default function GalleryPage() {
+  const countries = new Set(paintings.map(p => p.country.split('/')[0].trim())).size
+  const totalArt = paintings.length
+
   return (
-    <div className="flex flex-col h-dvh overflow-hidden"
-      style={{ background: 'radial-gradient(ellipse at 50% 0%, #1a0d35 0%, #0a0d1f 60%, #050810 100%)' }}>
+    <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
 
-      {/* Stars background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
-        {[...Array(40)].map((_, i) => (
-          <div key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: i % 5 === 0 ? 3 : i % 3 === 0 ? 2 : 1,
-              height: i % 5 === 0 ? 3 : i % 3 === 0 ? 2 : 1,
-              top: `${(i * 7.3 + 5) % 90}%`,
-              left: `${(i * 11.7 + 3) % 98}%`,
-              opacity: 0.3 + (i % 4) * 0.15,
-            }}
-          />
-        ))}
-      </div>
-
-      <header className="text-center pt-6 pb-3 px-4 shrink-0 relative" style={{ zIndex: 1 }}>
-        <p className="text-white/35 text-xs tracking-widest uppercase mb-1"
-          style={{ fontFamily: 'Nunito,sans-serif', letterSpacing: '0.2em' }}>
-          Un viatge màgic per l&apos;art del món
-        </p>
-        <h1 className="text-4xl md:text-6xl text-white mb-1"
-          style={{
-            fontFamily: "'Fredoka One',cursive",
-            background: 'linear-gradient(135deg,#f093fb 0%,#f5576c 50%,#4facfe 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 24px rgba(240,147,251,0.4))',
+      {/* Header */}
+      <header className="shrink-0" style={{ paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
+        <div className="flex items-center gap-2 mb-1">
+          <span style={{
+            display: 'inline-block', width: 26, height: 3, borderRadius: 3, background: ACCENT,
+          }} />
+          <span style={{
+            fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: 'var(--ink-50)', fontWeight: 700, fontFamily: 'var(--font-body)',
           }}>
-          🎨 Pintem junts!
+            Un viatge per l&apos;art del món
+          </span>
+        </div>
+        <h1 style={{
+          margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800,
+          fontSize: 40, lineHeight: 0.98, letterSpacing: '-0.01em', color: 'var(--ink)',
+        }}>
+          Pintem <span style={{ color: ACCENT }}>junts</span>
         </h1>
-        <p className="text-white/45 text-sm" style={{ fontFamily: 'Nunito,sans-serif' }}>
-          Toca un país per descobrir el seu art
+        <p style={{
+          margin: '6px 0 0', fontSize: 14.5, color: 'var(--ink-70)', fontFamily: 'var(--font-body)',
+        }}>
+          Toca un punt del mapa i comença a pintar.
         </p>
       </header>
 
-      <div className="flex-1 relative" style={{ zIndex: 1, minHeight: 0 }}>
-        <div className="absolute inset-0">
-          <WorldMap />
-        </div>
+      {/* Mapa centrat verticalment */}
+      <div className="flex-1 flex flex-col justify-center min-h-0"
+        style={{ padding: '14px 18px 0' }}>
+        <WorldMap />
+      </div>
+
+      {/* Peu */}
+      <div className="text-center shrink-0"
+        style={{
+          padding: '12px 0 20px',
+          fontSize: 11.5, color: 'var(--ink-35)', letterSpacing: '0.04em',
+          fontFamily: 'var(--font-body)',
+        }}>
+        {totalArt} obres mestres · {countries} països · 17.000 anys d&apos;art
       </div>
     </div>
   )
