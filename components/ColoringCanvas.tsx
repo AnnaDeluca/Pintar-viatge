@@ -8,45 +8,69 @@ function luma(d: Uint8ClampedArray, i: number) {
   return (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8
 }
 
-// ── POSTERIZE EDGES ────────────────────────────────────────────────────
-// Mètode molt millor que Sobel per a estètica de llibre per pintar:
-//   1. Quantitza la imatge a N nivells de lluminositat
-//   2. Traça les vores entre regions de quantitzacions diferents
-// Resultat: línies fines, contínues, netes — com un dibuix real.
-//
-// La quantització és ADAPTATIVA: usa el rang real del 2%-98% del histograma
-// (no fixe 0..255). Així capturem detall a quadres uniformes (Matisse, Velázquez)
-// sense saturar els que tenen molt contrast (Hokusai, Cassatt).
-function posterizeEdges(src: ImageData, N = 5): ImageData {
+// ── POSTERIZE EDGES + NETEJA COMPONENTS PETITS ──────────────────────────
+// Pipeline per a estètica de llibre per pintar real:
+//   1. Quantitza la lluminositat en N nivells (rang adaptatiu)
+//   2. Traça vores entre regions
+//   3. ELIMINA components petits (< minSize píxels) → línies netes,
+//      sense les "illes" de soroll dels gradients de la pintura
+function posterizeEdges(src: ImageData, N = 3, minSize = 40): ImageData {
   const { data: d, width: W, height: H } = src
-  // Calcula lluminositat per píxel
   const L = new Float32Array(W * H)
   for (let i = 0; i < W * H; i++) L[i] = luma(d, i * 4)
 
-  // Percentils 2/98 com a rang
   const sorted = Float32Array.from(L).sort()
   const lo = sorted[Math.floor(sorted.length * 0.02)]
   const hi = sorted[Math.floor(sorted.length * 0.98)]
   const range = Math.max(1, hi - lo)
 
-  // Quantitza al rang [0, N)
   const Q = new Uint8Array(W * H)
   for (let i = 0; i < W * H; i++) {
     const norm = Math.max(0, Math.min(1, (L[i] - lo) / range))
     Q[i] = Math.floor(norm * N * 0.9999)
   }
 
-  // Vores: píxel marca'ls com vora si algun veí 4-cardinals té quantum diferent
-  const out = new ImageData(W, H)
+  // Marca vores (matriu plana 1=vora, 0=res)
+  const edges = new Uint8Array(W * H)
   for (let y = 1; y < H - 1; y++) {
     for (let x = 1; x < W - 1; x++) {
       const i = y * W + x
       if (Q[i] !== Q[i - 1] || Q[i] !== Q[i + 1] ||
           Q[i] !== Q[i - W] || Q[i] !== Q[i + W]) {
-        out.data[i * 4 + 3] = 255
+        edges[i] = 1
       }
     }
   }
+
+  // Elimina components connectats (8-veïnatge) més petits que minSize
+  // — això esborra les petites illes/squiggles dels gradients del quadre.
+  const visited = new Uint8Array(W * H)
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const start = y * W + x
+      if (!edges[start] || visited[start]) continue
+      const stack = [start]
+      const comp: number[] = []
+      visited[start] = 1
+      while (stack.length) {
+        const p = stack.pop()!
+        comp.push(p)
+        const px = p % W, py = (p - px) / W
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue
+          const nx = px + dx, ny = py + dy
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue
+          const n = ny * W + nx
+          if (edges[n] && !visited[n]) { visited[n] = 1; stack.push(n) }
+        }
+      }
+      if (comp.length < minSize) for (const p of comp) edges[p] = 0
+    }
+  }
+
+  // Resultat com a ImageData
+  const out = new ImageData(W, H)
+  for (let i = 0; i < W * H; i++) if (edges[i]) out.data[i * 4 + 3] = 255
   return out
 }
 
@@ -224,12 +248,12 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const maskSrc = mc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(maskSrc.data)
 
-          // Blur més fort + N=3 nivells: elimina les línies paral·leles
-          // ("isobands") que es formaven amb N=5; una sola línia per forma.
+          // Blur fort (8px) per esborrar TOTA la textura interna del quadre
+          // (pinzellades, gradients, soroll) i deixar només les formes grans.
           const blurCanvas = document.createElement('canvas')
           blurCanvas.width = W; blurCanvas.height = H
           const bc = blurCanvas.getContext('2d')!
-          bc.filter = 'blur(5px)'
+          bc.filter = 'blur(8px)'
           bc.drawImage(img, 0, 0, W, H)
           bc.filter = 'none'
           const blurSrc = bc.getImageData(0, 0, W, H)
@@ -238,9 +262,9 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
-          // POSTERIZE amb N=3 nivells + percentil 2-98 → línia única
-          // i neta per a cada forma (com un llibre per pintar de veritat)
-          const edges = posterizeEdges(blurSrc, 3)
+          // POSTERIZE: N=3 nivells + neteja components < 40px
+          // → línies netes i simples, com un llibre per pintar de veritat
+          const edges = posterizeEdges(blurSrc, 3, 40)
 
           const ec = edge.getContext('2d')!
           ec.putImageData(edges, 0, 0)
