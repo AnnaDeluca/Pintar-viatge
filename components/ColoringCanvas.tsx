@@ -66,15 +66,19 @@ function floodFill(
 
 export interface ColoringCanvasHandle { clear: () => void }
 
+export type Tool = 'fill' | 'brush'
+
 interface Props {
   imageUrl: string
   selectedColor: string
+  tool?: Tool
+  brushSize?: number
   onLoadFail?: () => void
   className?: string
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, onLoadFail, className = '' }, ref) {
+  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, onLoadFail, className = '' }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
@@ -168,21 +172,66 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       }
     }, [imageUrl])  // only re-run when imageUrl changes
 
-    const handlePointer = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-      const paint = paintRef.current
-      const m = maskData.current
-      if (!paint || !m || !ready) return
-      e.preventDefault()
+    const lastPos = useRef<{ x: number; y: number } | null>(null)
+
+    const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const paint = paintRef.current!
       const rect = paint.getBoundingClientRect()
-      const sx = Math.floor((e.clientX - rect.left) * (paint.width / rect.width))
-      const sy = Math.floor((e.clientY - rect.top)  * (paint.height / rect.height))
-      if (sx < 0 || sx >= paint.width || sy < 0 || sy >= paint.height) return
+      return {
+        x: Math.floor((e.clientX - rect.left) * (paint.width / rect.width)),
+        y: Math.floor((e.clientY - rect.top) * (paint.height / rect.height)),
+      }
+    }
+
+    const drawBrushStroke = (x0: number, y0: number, x1: number, y1: number) => {
+      const paint = paintRef.current!
       const pc = paint.getContext('2d')!
-      const pd = pc.getImageData(0, 0, paint.width, paint.height)
-      const [fr, fg, fb] = hexToRgb(selectedColor)
-      floodFill(pd.data, m, paint.width, paint.height, sx, sy, fr, fg, fb, 38)
-      pc.putImageData(pd, 0, 0)
-    }, [ready, selectedColor])
+      // Brush size escalat segons mida real del canvas (sense importar zoom CSS)
+      const r = (brushSize * paint.width) / 600
+      pc.strokeStyle = selectedColor
+      pc.lineWidth = r * 2
+      pc.lineCap = 'round'
+      pc.lineJoin = 'round'
+      pc.beginPath()
+      pc.moveTo(x0, y0)
+      pc.lineTo(x1, y1)
+      pc.stroke()
+    }
+
+    const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+      const paint = paintRef.current
+      if (!paint || !ready) return
+      e.preventDefault()
+      paint.setPointerCapture(e.pointerId)
+      const { x, y } = getCanvasCoords(e)
+      if (x < 0 || x >= paint.width || y < 0 || y >= paint.height) return
+
+      if (tool === 'fill') {
+        const m = maskData.current
+        if (!m) return
+        const pc = paint.getContext('2d')!
+        const pd = pc.getImageData(0, 0, paint.width, paint.height)
+        const [fr, fg, fb] = hexToRgb(selectedColor)
+        floodFill(pd.data, m, paint.width, paint.height, x, y, fr, fg, fb, 38)
+        pc.putImageData(pd, 0, 0)
+      } else {
+        // brush: punt inicial
+        drawBrushStroke(x, y, x, y)
+        lastPos.current = { x, y }
+      }
+    }, [ready, selectedColor, tool, brushSize])
+
+    const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (tool !== 'brush' || !lastPos.current || !ready) return
+      e.preventDefault()
+      const { x, y } = getCanvasCoords(e)
+      drawBrushStroke(lastPos.current.x, lastPos.current.y, x, y)
+      lastPos.current = { x, y }
+    }, [tool, ready, selectedColor, brushSize])
+
+    const handlePointerUp = useCallback(() => {
+      lastPos.current = null
+    }, [])
 
     return (
       <div className={`relative bg-white ${className}`}
@@ -190,7 +239,10 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"
           style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}
-          onPointerDown={handlePointer}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         />
         <canvas ref={edgeRef}
           className="absolute inset-0 w-full h-full pointer-events-none"

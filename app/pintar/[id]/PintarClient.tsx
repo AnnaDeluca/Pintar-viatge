@@ -3,23 +3,33 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { type PaintingMeta } from '@/data/paintings'
-import ColoringCanvas, { type ColoringCanvasHandle } from '@/components/ColoringCanvas'
+import ColoringCanvas, { type ColoringCanvasHandle, type Tool } from '@/components/ColoringCanvas'
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 
-const EXTRA_COLORS = [
-  '#E63946','#FF6B6B','#F4A261','#F6C90E','#FFD700',
-  '#57CC99','#2E8B57','#4CC9F0','#2364AA','#0A3060',
-  '#8B5CF6','#D946EF','#F08080','#A0522D','#8B4513',
-  '#1A1A1A','#FFFFFF','#F5F5DC',
+// Paleta de colors organitzada per famílies
+const COLOR_FAMILIES = [
+  { name: 'Vermells',  colors: ['#E63946','#FF6B6B','#F08080','#8B0000','#C41E3A'] },
+  { name: 'Taronges',  colors: ['#F4A261','#FF8C42','#FFA500','#D2691E','#A0522D'] },
+  { name: 'Grocs',     colors: ['#F6C90E','#FFD700','#FFF44F','#DAA520','#B8860B'] },
+  { name: 'Verds',     colors: ['#57CC99','#2E8B57','#90EE90','#228B22','#006400'] },
+  { name: 'Blaus',     colors: ['#AEE6FF','#4CC9F0','#2364AA','#0A3060','#1A1A2E'] },
+  { name: 'Violetes',  colors: ['#8B5CF6','#D946EF','#F093FB','#9370DB','#4B0082'] },
+  { name: 'Marrons',   colors: ['#8B4513','#A0522D','#654321','#D2691E','#F5DEB3'] },
+  { name: 'Neutres',   colors: ['#FFFFFF','#F5F5DC','#808080','#1A1A1A','#000000'] },
 ]
+
+const ALL_COLORS = COLOR_FAMILIES.flatMap(f => f.colors)
 
 export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const isDots = painting.mechanic === 'dots'
 
   const canvasRef = useRef<ColoringCanvasHandle>(null)
   const [selectedColor, setSelectedColor] = useState('#E63946')
+  const [tool, setTool] = useState<Tool>('fill')
+  const [brushSize, setBrushSize] = useState(24)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const handleLoadFail = useCallback(() => setLoadError(true), [])
@@ -40,7 +50,11 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     setCelebrate(false)
   }
 
-  const palette = [...new Set([...painting.palette, ...EXTRA_COLORS])].slice(0, 20)
+  // Combina paleta del quadre + alguns colors generals, sense duplicats
+  const quickPalette = [...new Set([
+    ...painting.palette,
+    '#E63946','#F6C90E','#57CC99','#4CC9F0','#8B5CF6','#FF6B6B','#FFFFFF','#1A1A1A',
+  ])].slice(0, 14)
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: '#0e0c18' }}>
@@ -100,6 +114,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               ref={canvasRef}
               imageUrl={painting.imageUrl}
               selectedColor={selectedColor}
+              tool={tool}
+              brushSize={brushSize}
               onLoadFail={handleLoadFail}
               className="rounded-3xl overflow-hidden shadow-2xl"
             />
@@ -175,34 +191,153 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         </div>
       )}
 
-      {/* Palette */}
+      {/* Barra d'eines + paleta */}
       <div className="shrink-0 pb-safe"
         style={{ background: 'rgba(255,255,255,0.04)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-2.5 px-3 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+
+        {/* Row 1: Eines + control de mida del pinzell */}
+        {!isDots && (
+          <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
+            {/* Toggle eina */}
+            <div className="flex rounded-2xl overflow-hidden shrink-0"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button onClick={() => setTool('fill')}
+                className="px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-95"
+                style={{
+                  background: tool === 'fill' ? '#f5576c' : 'transparent',
+                  color: tool === 'fill' ? 'white' : 'rgba(255,255,255,0.6)',
+                  fontFamily: 'Nunito,sans-serif',
+                }}>
+                <span style={{ fontSize: 14 }}>🪣</span> Omple
+              </button>
+              <button onClick={() => setTool('brush')}
+                className="px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-95"
+                style={{
+                  background: tool === 'brush' ? '#f5576c' : 'transparent',
+                  color: tool === 'brush' ? 'white' : 'rgba(255,255,255,0.6)',
+                  fontFamily: 'Nunito,sans-serif',
+                }}>
+                <span style={{ fontSize: 14 }}>🖌️</span> Pinzell
+              </button>
+            </div>
+
+            {/* Slider mida pinzell (només si tool=brush) */}
+            {tool === 'brush' && (
+              <>
+                <div className="w-6 h-6 rounded-full shrink-0 border border-white/20"
+                  style={{ background: selectedColor, width: Math.max(8, brushSize * 0.6), height: Math.max(8, brushSize * 0.6) }}/>
+                <input type="range" min={6} max={60} step={2}
+                  value={brushSize}
+                  onChange={e => setBrushSize(Number(e.target.value))}
+                  className="flex-1"
+                  style={{ accentColor: '#f5576c' }}/>
+              </>
+            )}
+
+            {/* Espaiador + botó paleta */}
+            <div className="flex-1" />
+            <button onClick={() => setShowColorPicker(true)}
+              className="shrink-0 px-3 py-1.5 rounded-2xl text-xs font-bold text-white flex items-center gap-1.5 active:scale-95 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', fontFamily: 'Nunito,sans-serif' }}>
+              <span style={{ fontSize: 14 }}>🎨</span> Més colors
+            </button>
+          </div>
+        )}
+
+        {/* Row 2: paleta ràpida */}
+        <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {/* Goma */}
           <button onClick={() => setSelectedColor('#FFFFFF')}
-            className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl border-2 transition-all active:scale-90"
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-lg border-2 transition-all active:scale-90"
             style={{
               background: '#FFFFFF',
               borderColor: selectedColor === '#FFFFFF' ? '#f5576c' : 'rgba(255,255,255,0.2)',
-              transform: selectedColor === '#FFFFFF' ? 'scale(1.25)' : 'scale(1)',
+              transform: selectedColor === '#FFFFFF' ? 'scale(1.2)' : 'scale(1)',
               boxShadow: selectedColor === '#FFFFFF' ? '0 0 0 3px rgba(245,87,108,0.4)' : 'none',
             }}>
             🧹
           </button>
-          {palette.map(color => (
+          {quickPalette.map(color => (
             <button key={color} onClick={() => setSelectedColor(color)}
-              className="shrink-0 w-12 h-12 rounded-full border-2 transition-all active:scale-90"
+              className="shrink-0 w-11 h-11 rounded-full border-2 transition-all active:scale-90"
               style={{
                 background: color,
                 borderColor: selectedColor === color ? '#FFFFFF' : 'rgba(255,255,255,0.15)',
-                transform: selectedColor === color ? 'scale(1.3)' : 'scale(1)',
+                transform: selectedColor === color ? 'scale(1.25)' : 'scale(1)',
                 boxShadow: selectedColor === color
                   ? '0 0 0 3px rgba(255,255,255,0.4), 0 4px 20px rgba(0,0,0,0.5)'
                   : '0 2px 8px rgba(0,0,0,0.4)',
               }}/>
           ))}
+          {/* Botó "més" a la paleta ràpida */}
+          <button onClick={() => setShowColorPicker(true)}
+            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl border-2 border-dashed transition-all active:scale-90"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
+            +
+          </button>
         </div>
       </div>
+
+      {/* Modal paleta completa */}
+      {showColorPicker && (
+        <div className="fixed inset-0 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.7)', zIndex: 60 }}
+          onClick={() => setShowColorPicker(false)}>
+          <div className="w-full max-w-md rounded-t-3xl p-5 pb-safe"
+            style={{ background: '#15131f', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-bold text-lg" style={{ fontFamily: "'Fredoka One',cursive" }}>
+                🎨 Tria un color
+              </h2>
+              <button onClick={() => setShowColorPicker(false)}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white"
+                style={{ background: 'rgba(255,255,255,0.1)' }}>
+                ×
+              </button>
+            </div>
+
+            {/* Famílies de colors */}
+            {COLOR_FAMILIES.map(family => (
+              <div key={family.name} className="mb-4">
+                <p className="text-white/50 text-xs mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: 'Nunito,sans-serif', letterSpacing: '0.1em' }}>
+                  {family.name}
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {family.colors.map(color => (
+                    <button key={color}
+                      onClick={() => { setSelectedColor(color); setShowColorPicker(false) }}
+                      className="aspect-square rounded-2xl border-2 transition-all active:scale-90"
+                      style={{
+                        background: color,
+                        borderColor: selectedColor === color ? '#f5576c' : 'rgba(255,255,255,0.15)',
+                        boxShadow: selectedColor === color ? '0 0 0 2px rgba(245,87,108,0.5)' : '0 2px 8px rgba(0,0,0,0.4)',
+                      }}/>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Custom color input */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <p className="text-white/50 text-xs mb-2 uppercase tracking-wider"
+                style={{ fontFamily: 'Nunito,sans-serif', letterSpacing: '0.1em' }}>
+                Color personalitzat
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="color"
+                  value={selectedColor}
+                  onChange={e => setSelectedColor(e.target.value)}
+                  className="w-14 h-14 rounded-2xl cursor-pointer"
+                  style={{ background: 'transparent', border: 'none' }}/>
+                <span className="text-white/70 text-sm" style={{ fontFamily: 'Nunito,sans-serif' }}>
+                  Toca per triar qualsevol color
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
