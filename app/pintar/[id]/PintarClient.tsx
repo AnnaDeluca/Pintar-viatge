@@ -137,6 +137,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [tool, setTool] = useState<Tool>('fill')
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
+  const [canUndo, setCanUndo] = useState(false)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
   const [showFact, setShowFact] = useState(false)
@@ -159,6 +160,15 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     else canvasRef.current?.clear()
     setCelebrate(false)
   }
+
+  const handleUndo = () => {
+    if (isDots) {
+      setDots(prev => prev.slice(0, -1))
+    } else {
+      canvasRef.current?.undo()
+    }
+  }
+  const undoAvailable = isDots ? dots.length > 0 : canUndo
 
   // colors del quadre + bàsics, deduplicat
   const artColors = (() => {
@@ -195,6 +205,22 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           </p>
         </div>
         <StudioBtn onClick={() => setShowFact(v => !v)} ariaLabel="Curiositat">💡</StudioBtn>
+        <button
+          onClick={undoAvailable ? handleUndo : undefined}
+          disabled={!undoAvailable}
+          aria-label="Desfer"
+          className="shrink-0 flex items-center justify-center text-white transition-all active:scale-95"
+          style={{
+            width: 42, height: 42, borderRadius: 14, fontSize: 18,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(255,255,255,0.09)',
+            backdropFilter: 'blur(6px)',
+            opacity: undoAvailable ? 1 : 0.35,
+            cursor: undoAvailable ? 'pointer' : 'not-allowed',
+          }}
+        >
+          ↶
+        </button>
         <StudioBtn onClick={handleClear} ariaLabel="Esborrar tot">🗑️</StudioBtn>
       </header>
 
@@ -230,6 +256,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               brushSize={brushSize}
               brushType={brushType}
               onLoadFail={handleLoadFail}
+              onHistoryChange={setCanUndo}
               className="overflow-hidden"
               // Marc blanc tipus "passe-partout" + ombra
               style={{

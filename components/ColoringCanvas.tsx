@@ -85,7 +85,13 @@ function floodFill(
   }
 }
 
-export interface ColoringCanvasHandle { clear: () => void }
+export interface ColoringCanvasHandle {
+  clear: () => void
+  undo: () => void
+  canUndo: () => boolean
+}
+
+const UNDO_LIMIT = 20  // màxim de passes a guardar (ImageData ocupa molt)
 
 export type Tool = 'fill' | 'brush'
 export type BrushType = 'round' | 'marker' | 'crayon' | 'pencil'
@@ -97,29 +103,64 @@ interface Props {
   brushSize?: number
   brushType?: BrushType
   onLoadFail?: () => void
+  onHistoryChange?: (canUndo: boolean) => void
   className?: string
   style?: React.CSSProperties
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, className = '', style }, ref) {
+  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
+    const history = useRef<ImageData[]>([])
     const [ready, setReady] = useState(false)
     const [dims, setDims] = useState({ w: 4, h: 3 })
+    // Per forçar re-render del botó d'undo quan canviï la història
+    const [historyVersion, setHistoryVersion] = useState(0)
+
+    const snapshot = useCallback(() => {
+      const c = paintRef.current
+      if (!c) return
+      const ctx = c.getContext('2d')
+      if (!ctx) return
+      const data = ctx.getImageData(0, 0, c.width, c.height)
+      history.current.push(data)
+      // Limita la història per no menjar memòria
+      if (history.current.length > UNDO_LIMIT) history.current.shift()
+      setHistoryVersion(v => v + 1)
+    }, [])
     // stable ref so imageUrl change re-triggers load but onLoadFail doesn't
     const onFailRef = useRef(onLoadFail)
     useEffect(() => { onFailRef.current = onLoadFail }, [onLoadFail])
+    const onHistoryChangeRef = useRef(onHistoryChange)
+    useEffect(() => { onHistoryChangeRef.current = onHistoryChange }, [onHistoryChange])
+    useEffect(() => {
+      onHistoryChangeRef.current?.(history.current.length > 0)
+    }, [historyVersion])
 
     useImperativeHandle(ref, () => ({
       clear() {
         const c = paintRef.current
         if (!c) return
+        // Snapshot abans de netejar perquè es pugui desfer
+        snapshot()
         const ctx = c.getContext('2d')
         if (ctx) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height) }
       },
-    }))
+      undo() {
+        const c = paintRef.current
+        if (!c) return
+        const last = history.current.pop()
+        if (!last) return
+        const ctx = c.getContext('2d')
+        if (ctx) ctx.putImageData(last, 0, 0)
+        setHistoryVersion(v => v + 1)
+      },
+      canUndo() {
+        return history.current.length > 0
+      },
+    }), [snapshot])
 
     useEffect(() => {
       const paint = paintRef.current
@@ -128,6 +169,8 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
       setReady(false)
       maskData.current = null
+      history.current = []
+      setHistoryVersion(v => v + 1)
 
       let alive = true
       const failTimer = setTimeout(() => { if (alive) onFailRef.current?.() }, 15000)
@@ -159,12 +202,12 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const maskSrc = mc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(maskSrc.data)
 
-          // Blur lleuger abans del posterize (suficient amb 4px;
-          // amb més difumina el detall que necessitem per al traçat)
+          // Blur més fort + N=3 nivells: elimina les línies paral·leles
+          // ("isobands") que es formaven amb N=5; una sola línia per forma.
           const blurCanvas = document.createElement('canvas')
           blurCanvas.width = W; blurCanvas.height = H
           const bc = blurCanvas.getContext('2d')!
-          bc.filter = 'blur(4px)'
+          bc.filter = 'blur(5px)'
           bc.drawImage(img, 0, 0, W, H)
           bc.filter = 'none'
           const blurSrc = bc.getImageData(0, 0, W, H)
@@ -173,9 +216,9 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
-          // POSTERIZE adaptatiu: quantitza a 5 nivells de gris amb
-          // rang dinàmic (percentil 2-98) i traça vores entre regions
-          const edges = posterizeEdges(blurSrc, 5)
+          // POSTERIZE amb N=3 nivells + percentil 2-98 → línia única
+          // i neta per a cada forma (com un llibre per pintar de veritat)
+          const edges = posterizeEdges(blurSrc, 3)
 
           const ec = edge.getContext('2d')!
           ec.putImageData(edges, 0, 0)
@@ -282,6 +325,9 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       const { x, y } = getCanvasCoords(e)
       if (x < 0 || x >= paint.width || y < 0 || y >= paint.height) return
 
+      // Snapshot abans de qualsevol acció — permet desfer
+      snapshot()
+
       if (tool === 'fill') {
         const m = maskData.current
         if (!m) return
@@ -295,7 +341,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         drawBrushStroke(x, y, x, y)
         lastPos.current = { x, y }
       }
-    }, [ready, selectedColor, tool, brushSize])
+    }, [ready, selectedColor, tool, brushSize, snapshot])
 
     const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
       if (tool !== 'brush' || !lastPos.current || !ready) return
