@@ -75,10 +75,11 @@ interface Props {
   brushSize?: number
   onLoadFail?: () => void
   className?: string
+  style?: React.CSSProperties
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, onLoadFail, className = '' }, ref) {
+  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, onLoadFail, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
@@ -235,7 +236,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
     return (
       <div className={`relative bg-white ${className}`}
-        style={{ aspectRatio: `${dims.w}/${dims.h}`, width: '100%', maxHeight: '100%' }}>
+        style={{ aspectRatio: `${dims.w}/${dims.h}`, width: '100%', maxHeight: '100%', ...style }}>
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"
           style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}

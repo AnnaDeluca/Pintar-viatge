@@ -1,5 +1,19 @@
 import type { Metadata, Viewport } from 'next'
+import { Baloo_2, Nunito } from 'next/font/google'
 import './globals.css'
+
+const display = Baloo_2({
+  subsets: ['latin'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-display',
+  display: 'swap',
+})
+const body = Nunito({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-body',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: '🎨 Pintem junts!',
@@ -15,12 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ca">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com"/>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
-        <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
-      </head>
+    <html lang="ca" className={`${display.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   )

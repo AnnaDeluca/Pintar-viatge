@@ -6,30 +6,106 @@ import { type PaintingMeta } from '@/data/paintings'
 import ColoringCanvas, { type ColoringCanvasHandle, type Tool } from '@/components/ColoringCanvas'
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 
-// Paleta de colors organitzada per famílies
-const COLOR_FAMILIES = [
-  { name: 'Vermells',  colors: ['#E63946','#FF6B6B','#F08080','#8B0000','#C41E3A'] },
-  { name: 'Taronges',  colors: ['#F4A261','#FF8C42','#FFA500','#D2691E','#A0522D'] },
-  { name: 'Grocs',     colors: ['#F6C90E','#FFD700','#FFF44F','#DAA520','#B8860B'] },
-  { name: 'Verds',     colors: ['#57CC99','#2E8B57','#90EE90','#228B22','#006400'] },
-  { name: 'Blaus',     colors: ['#AEE6FF','#4CC9F0','#2364AA','#0A3060','#1A1A2E'] },
-  { name: 'Violetes',  colors: ['#8B5CF6','#D946EF','#F093FB','#9370DB','#4B0082'] },
-  { name: 'Marrons',   colors: ['#8B4513','#A0522D','#654321','#D2691E','#F5DEB3'] },
-  { name: 'Neutres',   colors: ['#FFFFFF','#F5F5DC','#808080','#1A1A1A','#000000'] },
-]
+// Colors extres per omplir paleta si el quadre en té pocs
+const EXTRA_COLORS = ['#1A1A1A','#E63946','#F6C90E','#2E6A9E','#3FA34D','#F4A261']
 
-const ALL_COLORS = COLOR_FAMILIES.flatMap(f => f.colors)
+// Color base del quadre — usat per accents (botons, ressaltats)
+const PIGMENTS: Record<string, string> = {
+  lascaux:'#D85B3C', renoir:'#D85B3C', morisot:'#D85B3C', matisse:'#D85B3C',
+  vigee:'#D85B3C', botticelli:'#2E6A9E', artemisia:'#D85B3C', sofonisba:'#7C5C9E',
+  vangogh:'#E0A52E', cassatt:'#2E6A9E', vermeer:'#2E6A9E', mondrian:'#D85B3C',
+  munch:'#D85B3C', velazquez:'#7C5C9E', kandinsky:'#7C5C9E', klimt:'#E0A52E',
+  hokusai:'#2E6A9E', kusama:'#E0A52E', homer:'#4E8C6A', sargent:'#D85B3C',
+  lewitt:'#D85B3C', ndebele:'#4E8C6A',
+}
+
+// glossy "wet paint" radial fill per cada dab
+const dabBg = (c: string) =>
+  c.toUpperCase() === '#FFFFFF'
+    ? 'linear-gradient(135deg,#ffffff 0%,#ecebe3 100%)'
+    : `radial-gradient(circle at 33% 27%, color-mix(in srgb, ${c} 60%, #fff) 0%, ${c} 50%, color-mix(in srgb, ${c} 74%, #000) 100%)`
+
+interface PaintDabProps {
+  color: string
+  selected: boolean
+  onSelect: () => void
+}
+
+function PaintDab({ color, selected, onSelect }: PaintDabProps) {
+  return (
+    <button
+      onPointerDown={onSelect}
+      aria-label={color}
+      className="shrink-0 rounded-full"
+      style={{
+        width: 46, height: 46, border: 'none', padding: 0, cursor: 'pointer',
+        background: dabBg(color),
+        transition: 'transform .13s cubic-bezier(.22,1,.36,1)',
+        transform: selected ? 'translateY(-6px) scale(1.14)' : 'none',
+        boxShadow: selected
+          ? '0 0 0 3px #fffdf8, 0 0 0 5px rgba(80,55,25,0.20), 0 10px 18px rgba(60,40,20,0.45)'
+          : '0 4px 8px rgba(60,40,20,0.30), inset -2px -3px 5px rgba(0,0,0,0.22), inset 2px 3px 5px rgba(255,255,255,0.55)',
+      }}
+    />
+  )
+}
+
+function EraserDab({ selected, onSelect }: { selected: boolean; onSelect: () => void }) {
+  return (
+    <button
+      onPointerDown={onSelect}
+      aria-label="Goma d'esborrar"
+      className="shrink-0 rounded-full flex items-center justify-center"
+      style={{
+        width: 46, height: 46, border: 'none', padding: 0, cursor: 'pointer',
+        background: 'linear-gradient(135deg,#ffffff 0%,#ece9e0 100%)',
+        transition: 'transform .13s cubic-bezier(.22,1,.36,1)',
+        transform: selected ? 'translateY(-6px) scale(1.14)' : 'none',
+        boxShadow: selected
+          ? '0 0 0 3px #fffdf8, 0 0 0 5px rgba(80,55,25,0.20), 0 10px 18px rgba(60,40,20,0.45)'
+          : '0 4px 8px rgba(60,40,20,0.30), inset 0 0 0 1px rgba(80,55,25,0.16), inset 2px 3px 5px rgba(255,255,255,0.7)',
+      }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24">
+        <g transform="rotate(-38 12 12)">
+          <rect x="3.5" y="9" width="17" height="9.5" rx="2.6" fill="#F09BA6" />
+          <rect x="3.5" y="9" width="6.5" height="9.5" rx="2.6" fill="#fff" opacity="0.65" />
+          <rect x="3.5" y="9" width="17" height="9.5" rx="2.6" fill="none" stroke="#C9707C" strokeWidth="1" />
+        </g>
+      </svg>
+    </button>
+  )
+}
+
+function StudioBtn({ children, onClick, ariaLabel }: { children: React.ReactNode; onClick: () => void; ariaLabel: string }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-transform"
+      style={{
+        width: 42, height: 42, borderRadius: 14, fontSize: 18,
+        border: '1px solid rgba(255,255,255,0.14)',
+        background: 'rgba(255,255,255,0.09)',
+        backdropFilter: 'blur(6px)',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
 
 export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const isDots = painting.mechanic === 'dots'
+  const accent = PIGMENTS[painting.id] ?? '#D85B3C'
 
   const canvasRef = useRef<ColoringCanvasHandle>(null)
-  const [selectedColor, setSelectedColor] = useState('#E63946')
+  const [selectedColor, setSelectedColor] = useState(painting.palette[0] ?? '#E63946')
   const [tool, setTool] = useState<Tool>('fill')
   const [brushSize, setBrushSize] = useState(24)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
-  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [showFact, setShowFact] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const handleLoadFail = useCallback(() => setLoadError(true), [])
@@ -38,7 +114,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     setDots(prev => {
       const next = [...prev, { x, y, color: selectedColor, r: 7 + Math.floor(Math.random() * 9) }]
       if (next.length === 25 && !celebrate) {
-        setTimeout(() => { setCelebrate(true); setTimeout(() => setCelebrate(false), 3000) }, 200)
+        setTimeout(() => setCelebrate(true), 200)
       }
       return next
     })
@@ -50,64 +126,66 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     setCelebrate(false)
   }
 
-  // Combina paleta del quadre + alguns colors generals, sense duplicats
-  const quickPalette = [...new Set([
-    ...painting.palette,
-    '#E63946','#F6C90E','#57CC99','#4CC9F0','#8B5CF6','#FF6B6B','#FFFFFF','#1A1A1A',
-  ])].slice(0, 14)
+  // colors del quadre + bàsics, deduplicat
+  const artColors = (() => {
+    const own = [...new Set(painting.palette.map(c => c.toUpperCase()))].filter(c => c !== '#FFFFFF')
+    EXTRA_COLORS.forEach(c => { if (!own.includes(c)) own.push(c) })
+    return own.slice(0, 13)
+  })()
+
+  const isErasing = selectedColor.toUpperCase() === '#FFFFFF'
 
   return (
-    <div className="flex flex-col h-dvh overflow-hidden" style={{ background: '#0e0c18' }}>
+    <div className="flex flex-col h-dvh overflow-hidden relative"
+      style={{ background: 'radial-gradient(ellipse at 50% 32%, #322E29 0%, #211E1A 62%, #18150F 100%)' }}>
 
       {/* Top bar */}
-      <header className="flex items-center gap-2 px-3 pt-3 pb-2 shrink-0">
-        <Link href="/"
-          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shrink-0 active:scale-90 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.1)' }}>
+      <header className="flex items-center gap-2.5 px-3.5 pt-3 pb-2 shrink-0">
+        <Link href="/" aria-label="Tornar a l'atlas"
+          className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-transform"
+          style={{
+            width: 42, height: 42, borderRadius: 14, fontSize: 18,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(255,255,255,0.09)',
+            backdropFilter: 'blur(6px)',
+          }}>
           ←
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-white font-bold text-base leading-tight truncate"
-            style={{ fontFamily:"'Fredoka One',cursive" }}>
+          <h1 className="text-white truncate"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, lineHeight: 1.05 }}>
             {painting.emoji} {painting.title}
           </h1>
-          <p className="text-white/40 text-xs truncate">
+          <p className="truncate" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 1 }}>
             {painting.artist} · {painting.flag} {painting.year}
           </p>
         </div>
-        <button
-          onClick={() => {
-            const div = document.getElementById('funfact')
-            if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'
-          }}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-90 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.1)', fontSize: 18 }}>
-          💡
-        </button>
-        <button onClick={handleClear}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 active:scale-90 transition-transform"
-          style={{ background: 'rgba(255,255,255,0.1)', fontSize: 18 }}>
-          🗑️
-        </button>
+        <StudioBtn onClick={() => setShowFact(v => !v)} ariaLabel="Curiositat">💡</StudioBtn>
+        <StudioBtn onClick={handleClear} ariaLabel="Esborrar tot">🗑️</StudioBtn>
       </header>
 
       {/* Fun fact */}
-      <div id="funfact"
-        className="mx-3 mb-1 rounded-2xl px-4 py-2 text-sm font-medium shrink-0"
-        style={{ display: 'none', background: 'rgba(240,147,251,0.12)', border: '1px solid rgba(240,147,251,0.2)' }}>
-        <p style={{ color: '#ffecd2', fontFamily: 'Nunito,sans-serif' }}>💡 {painting.funFact}</p>
-      </div>
+      {showFact && (
+        <div className="mx-4 mt-0.5 shrink-0"
+          style={{
+            borderRadius: 16, padding: '12px 15px',
+            background: 'rgba(224,165,46,0.16)',
+            border: '1px solid rgba(224,165,46,0.4)',
+            animation: 'floatUp .25s ease',
+          }}>
+          <p style={{ margin: 0, color: '#FBE9C6', fontSize: 13.5, lineHeight: 1.4 }}>
+            <b style={{ color: '#F4C25E' }}>Sabies que…</b> {painting.funFact}
+          </p>
+        </div>
+      )}
 
       {/* Canvas + referència */}
-      <div className="flex-1 flex gap-2 px-3 pb-2 overflow-hidden min-h-0">
-
-        {/* Canvas principal — directament al flex, sense wrappers intermedis */}
-        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0">
+      <div className="flex-1 flex gap-3 px-4 pt-3.5 pb-2 min-h-0 items-center">
+        <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 h-full">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
               style={{ maxHeight: '100%', maxWidth: '100%', width: '100%', aspectRatio: '280/300' }}>
-              <Kusama fills={{}} onRegionClick={() => {}}
-                dots={dots} onSvgClick={handleSvgClick}/>
+              <Kusama fills={{}} onRegionClick={() => {}} dots={dots} onSvgClick={handleSvgClick} />
             </div>
           ) : painting.imageUrl && !loadError ? (
             <ColoringCanvas
@@ -117,243 +195,226 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               tool={tool}
               brushSize={brushSize}
               onLoadFail={handleLoadFail}
-              className="rounded-3xl overflow-hidden shadow-2xl"
+              className="overflow-hidden"
+              // Marc blanc tipus "passe-partout" + ombra
+              style={{
+                borderRadius: 14,
+                boxShadow: '0 18px 40px rgba(35,50,62,0.28), 0 0 0 6px #fff, 0 0 0 7px rgba(35,50,62,0.12)',
+              }}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center text-white/40 text-sm p-8 text-center gap-3 rounded-3xl"
-              style={{ fontFamily: 'Nunito,sans-serif', width: 240, height: 180, background: 'rgba(255,255,255,0.05)' }}>
+            <div className="flex flex-col items-center justify-center text-white/55 text-sm p-6 text-center gap-3 rounded-3xl"
+              style={{ width: 240, height: 180, background: 'rgba(255,255,255,0.05)' }}>
               <span className="text-5xl">🖼️</span>
               <p>No s&apos;ha pogut carregar el quadre</p>
               {loadError && (
                 <button onClick={() => setLoadError(false)}
                   className="px-4 py-2 rounded-xl text-xs font-bold text-white active:scale-90 transition-transform"
                   style={{ background: 'rgba(255,255,255,0.15)' }}>
-                  Tornar a intentar
+                  Tornar a provar
                 </button>
               )}
             </div>
           )}
         </div>
 
-        {/* Miniatura original — responsive: més gran en pantalles amples */}
+        {/* Model — referència original */}
         {painting.imageUrl && !isDots && (
-          <div className="flex flex-col items-center gap-1.5 shrink-0 justify-center"
-            style={{ width: 'clamp(72px, 14vw, 160px)' }}>
-            <p className="text-white/40 text-center"
-              style={{ fontSize: 'clamp(7px, 1.2vw, 10px)', fontFamily: 'Nunito,sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Original
-            </p>
-            <button
-              onClick={() => setShowOriginal(true)}
-              className="w-full rounded-2xl overflow-hidden shadow-xl active:scale-95 transition-transform"
-              style={{ border: '2px solid rgba(255,255,255,0.25)' }}>
+          <div className="flex flex-col items-center gap-1.5 shrink-0"
+            style={{ width: 'clamp(60px, 12vw, 100px)' }}>
+            <span style={{
+              fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.45)', fontWeight: 700, fontFamily: 'var(--font-body)',
+            }}>
+              Model
+            </span>
+            <button onClick={() => setShowOriginal(true)}
+              className="w-full rounded-xl overflow-hidden active:scale-95 transition-transform"
+              style={{
+                border: '2px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.4)',
+                background: 'none', padding: 0, cursor: 'pointer',
+              }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={painting.thumbUrl || painting.imageUrl}
-                alt={painting.title}
-                className="w-full h-auto block"
-              />
+              <img src={painting.thumbUrl || painting.imageUrl} alt={painting.title}
+                className="w-full block" />
             </button>
-            <p className="text-white/25 text-center"
-              style={{ fontSize: 'clamp(6px, 1vw, 9px)', fontFamily: 'Nunito,sans-serif' }}>
-              toca per ampliar
-            </p>
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-body)' }}>
+              toca per veure
+            </span>
           </div>
         )}
       </div>
 
-      {/* Celebració a pantalla completa */}
-      {celebrate && (
-        <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none"
-          style={{ background: 'rgba(255,255,255,0.95)', zIndex: 50 }}>
-          <div className="text-8xl mb-4 animate-bounce">🎉</div>
-          <p className="text-4xl font-bold text-center px-8"
-            style={{ fontFamily: "'Fredoka One',cursive", color: '#f5576c' }}>
-            Ets un artista!
-          </p>
-          <p className="text-5xl mt-4">⭐🎨⭐</p>
-        </div>
-      )}
+      {/* He acabat */}
+      <div className="flex justify-center pb-1.5 shrink-0">
+        <button onClick={() => setCelebrate(true)}
+          className="flex items-center gap-1.5 active:scale-95 transition-transform"
+          style={{
+            padding: '9px 22px', borderRadius: 999, border: 'none',
+            background: accent, color: 'white',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14.5,
+            boxShadow: `0 6px 18px ${accent}66`,
+          }}>
+          He acabat <span style={{ fontSize: 16 }}>✓</span>
+        </button>
+      </div>
 
-      {/* Overlay original a pantalla completa */}
-      {showOriginal && painting.imageUrl && (
-        <div className="fixed inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.92)', zIndex: 50 }}
-          onClick={() => setShowOriginal(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={painting.imageUrl} alt={painting.title}
-            className="max-w-full max-h-full object-contain rounded-2xl"
-            style={{ maxWidth: '90vw', maxHeight: '90vh', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}/>
-          <p className="absolute bottom-6 text-white/50 text-sm"
-            style={{ fontFamily: 'Nunito,sans-serif' }}>
-            Toca per tancar
-          </p>
-        </div>
-      )}
+      {/* ── La safata ceràmica ── */}
+      {!isDots && (
+        <div className="shrink-0 pb-safe relative"
+          style={{
+            paddingTop: 13, paddingBottom: 22,
+            background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',
+            borderTop: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 -12px 34px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.8)',
+          }}>
 
-      {/* Barra d'eines + paleta */}
-      <div className="shrink-0 pb-safe"
-        style={{ background: 'rgba(255,255,255,0.04)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          {/* Header safata */}
+          <div className="flex items-center justify-between px-5 pb-2.5">
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#8A744F',
+            }}>
+              Tria un color
+            </span>
+            <div className="flex items-center gap-2">
+              <span style={{
+                fontSize: 11.5, color: 'rgba(74,58,32,0.62)', fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-body)',
+              }}>
+                {isErasing ? 'Goma' : 'El teu color'}
+              </span>
+              <span style={{
+                width: 30, height: 30, borderRadius: '50%', display: 'block',
+                background: dabBg(selectedColor),
+                boxShadow: '0 3px 6px rgba(60,40,20,0.35), inset -1px -2px 3px rgba(0,0,0,0.18), inset 1px 2px 3px rgba(255,255,255,0.6)',
+                outline: isErasing ? '1px solid rgba(74,58,32,0.22)' : 'none',
+                outlineOffset: -1,
+              }} />
+            </div>
+          </div>
 
-        {/* Row 1: Eines + control de mida del pinzell */}
-        {!isDots && (
-          <div className="flex items-center gap-2 px-3 pt-2.5 pb-1.5">
-            {/* Toggle eina */}
-            <div className="flex rounded-2xl overflow-hidden shrink-0"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {/* Eines: fill / brush (només si no és dots) */}
+          <div className="flex items-center justify-center gap-3 px-5 pb-3">
+            <div className="flex rounded-full overflow-hidden"
+              style={{ background: 'rgba(74,58,32,0.08)', border: '1px solid rgba(74,58,32,0.12)' }}>
               <button onClick={() => setTool('fill')}
-                className="px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-95"
+                className="flex items-center gap-1.5 active:scale-95 transition-all"
                 style={{
-                  background: tool === 'fill' ? '#f5576c' : 'transparent',
-                  color: tool === 'fill' ? 'white' : 'rgba(255,255,255,0.6)',
-                  fontFamily: 'Nunito,sans-serif',
+                  padding: '7px 14px', fontSize: 12.5, fontWeight: 700,
+                  background: tool === 'fill' ? accent : 'transparent',
+                  color: tool === 'fill' ? 'white' : 'rgba(74,58,32,0.7)',
+                  fontFamily: 'var(--font-body)', border: 'none',
                 }}>
                 <span style={{ fontSize: 14 }}>🪣</span> Omple
               </button>
               <button onClick={() => setTool('brush')}
-                className="px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-colors active:scale-95"
+                className="flex items-center gap-1.5 active:scale-95 transition-all"
                 style={{
-                  background: tool === 'brush' ? '#f5576c' : 'transparent',
-                  color: tool === 'brush' ? 'white' : 'rgba(255,255,255,0.6)',
-                  fontFamily: 'Nunito,sans-serif',
+                  padding: '7px 14px', fontSize: 12.5, fontWeight: 700,
+                  background: tool === 'brush' ? accent : 'transparent',
+                  color: tool === 'brush' ? 'white' : 'rgba(74,58,32,0.7)',
+                  fontFamily: 'var(--font-body)', border: 'none',
                 }}>
                 <span style={{ fontSize: 14 }}>🖌️</span> Pinzell
               </button>
             </div>
 
-            {/* Mides predefinides del pinzell */}
+            {/* Mides de pinzell (només si tool=brush) */}
             {tool === 'brush' && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                {[
-                  { label: 'S', size: 10 },
-                  { label: 'M', size: 24 },
-                  { label: 'L', size: 42 },
-                  { label: 'XL', size: 70 },
-                ].map(({ label, size }) => {
-                  const active = brushSize === size
+              <div className="flex items-center gap-1.5">
+                {[{ l: 'S', s: 10 }, { l: 'M', s: 24 }, { l: 'L', s: 42 }, { l: 'XL', s: 70 }].map(({ l, s }) => {
+                  const active = brushSize === s
                   return (
-                    <button key={label} onClick={() => setBrushSize(size)}
-                      className="flex items-center justify-center rounded-full transition-all active:scale-90"
+                    <button key={l} onClick={() => setBrushSize(s)}
+                      className="flex items-center justify-center rounded-full active:scale-90 transition-all"
                       style={{
-                        width: 36, height: 36,
-                        background: active ? 'rgba(245,87,108,0.25)' : 'rgba(255,255,255,0.08)',
-                        border: `1.5px solid ${active ? '#f5576c' : 'rgba(255,255,255,0.15)'}`,
+                        width: 32, height: 32,
+                        background: active ? `${accent}33` : 'rgba(74,58,32,0.06)',
+                        border: `1.5px solid ${active ? accent : 'rgba(74,58,32,0.15)'}`,
                       }}>
-                      <div className="rounded-full"
-                        style={{
-                          background: selectedColor,
-                          width: Math.min(28, 6 + size * 0.32),
-                          height: Math.min(28, 6 + size * 0.32),
-                          boxShadow: '0 0 0 1px rgba(0,0,0,0.2)',
-                        }}/>
+                      <div className="rounded-full" style={{
+                        background: selectedColor,
+                        width: Math.min(22, 5 + s * 0.26),
+                        height: Math.min(22, 5 + s * 0.26),
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
+                      }} />
                     </button>
                   )
                 })}
               </div>
             )}
-
-            {/* Espaiador + botó paleta */}
-            <div className="flex-1" />
-            <button onClick={() => setShowColorPicker(true)}
-              className="shrink-0 px-3 py-1.5 rounded-2xl text-xs font-bold text-white flex items-center gap-1.5 active:scale-95 transition-transform"
-              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', fontFamily: 'Nunito,sans-serif' }}>
-              <span style={{ fontSize: 14 }}>🎨</span> Més colors
-            </button>
           </div>
-        )}
 
-        {/* Row 2: paleta ràpida */}
-        <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {/* Goma */}
-          <button onClick={() => setSelectedColor('#FFFFFF')}
-            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-lg border-2 transition-all active:scale-90"
-            style={{
-              background: '#FFFFFF',
-              borderColor: selectedColor === '#FFFFFF' ? '#f5576c' : 'rgba(255,255,255,0.2)',
-              transform: selectedColor === '#FFFFFF' ? 'scale(1.2)' : 'scale(1)',
-              boxShadow: selectedColor === '#FFFFFF' ? '0 0 0 3px rgba(245,87,108,0.4)' : 'none',
-            }}>
-            🧹
-          </button>
-          {quickPalette.map(color => (
-            <button key={color} onClick={() => setSelectedColor(color)}
-              className="shrink-0 w-11 h-11 rounded-full border-2 transition-all active:scale-90"
-              style={{
-                background: color,
-                borderColor: selectedColor === color ? '#FFFFFF' : 'rgba(255,255,255,0.15)',
-                transform: selectedColor === color ? 'scale(1.25)' : 'scale(1)',
-                boxShadow: selectedColor === color
-                  ? '0 0 0 3px rgba(255,255,255,0.4), 0 4px 20px rgba(0,0,0,0.5)'
-                  : '0 2px 8px rgba(0,0,0,0.4)',
-              }}/>
-          ))}
-          {/* Botó "més" a la paleta ràpida */}
-          <button onClick={() => setShowColorPicker(true)}
-            className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl border-2 border-dashed transition-all active:scale-90"
-            style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
-            +
-          </button>
-        </div>
-      </div>
-
-      {/* Modal paleta completa */}
-      {showColorPicker && (
-        <div className="fixed inset-0 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.7)', zIndex: 60 }}
-          onClick={() => setShowColorPicker(false)}>
-          <div className="w-full max-w-md rounded-t-3xl p-5 pb-safe"
-            style={{ background: '#15131f', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '80vh', overflowY: 'auto' }}
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-lg" style={{ fontFamily: "'Fredoka One',cursive" }}>
-                🎨 Tria un color
-              </h2>
-              <button onClick={() => setShowColorPicker(false)}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white"
-                style={{ background: 'rgba(255,255,255,0.1)' }}>
-                ×
-              </button>
-            </div>
-
-            {/* Famílies de colors */}
-            {COLOR_FAMILIES.map(family => (
-              <div key={family.name} className="mb-4">
-                <p className="text-white/50 text-xs mb-2 uppercase tracking-wider"
-                  style={{ fontFamily: 'Nunito,sans-serif', letterSpacing: '0.1em' }}>
-                  {family.name}
-                </p>
-                <div className="grid grid-cols-5 gap-2">
-                  {family.colors.map(color => (
-                    <button key={color}
-                      onClick={() => { setSelectedColor(color); setShowColorPicker(false) }}
-                      className="aspect-square rounded-2xl border-2 transition-all active:scale-90"
-                      style={{
-                        background: color,
-                        borderColor: selectedColor === color ? '#f5576c' : 'rgba(255,255,255,0.15)',
-                        boxShadow: selectedColor === color ? '0 0 0 2px rgba(245,87,108,0.5)' : '0 2px 8px rgba(0,0,0,0.4)',
-                      }}/>
-                  ))}
-                </div>
-              </div>
+          {/* Dabs — tots visibles, dues files */}
+          <div className="flex flex-wrap justify-center items-center"
+            style={{ gap: '13px 15px', padding: '4px 20px 0' }}>
+            <EraserDab selected={isErasing} onSelect={() => setSelectedColor('#FFFFFF')} />
+            <span style={{ width: 1, height: 34, background: 'rgba(74,58,32,0.16)', alignSelf: 'center' }} />
+            {artColors.map(c => (
+              <PaintDab key={c} color={c}
+                selected={!isErasing && selectedColor.toUpperCase() === c}
+                onSelect={() => setSelectedColor(c)} />
             ))}
-
-            {/* Custom color input */}
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <p className="text-white/50 text-xs mb-2 uppercase tracking-wider"
-                style={{ fontFamily: 'Nunito,sans-serif', letterSpacing: '0.1em' }}>
-                Color personalitzat
-              </p>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="color"
-                  value={selectedColor}
-                  onChange={e => setSelectedColor(e.target.value)}
-                  className="w-14 h-14 rounded-2xl cursor-pointer"
-                  style={{ background: 'transparent', border: 'none' }}/>
-                <span className="text-white/70 text-sm" style={{ fontFamily: 'Nunito,sans-serif' }}>
-                  Toca per triar qualsevol color
-                </span>
-              </label>
-            </div>
           </div>
+        </div>
+      )}
+
+      {/* Original a pantalla completa */}
+      {showOriginal && painting.imageUrl && (
+        <div onClick={() => setShowOriginal(false)}
+          className="fixed inset-0 flex items-center justify-center p-6"
+          style={{ background: 'rgba(10,8,6,0.94)', zIndex: 55, animation: 'fadeIn .2s ease' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={painting.imageUrl} alt={painting.title}
+            className="object-contain"
+            style={{
+              maxWidth: '92%', maxHeight: '82%',
+              borderRadius: 16, boxShadow: '0 18px 50px rgba(0,0,0,0.7)',
+            }} />
+          <p className="absolute bottom-10"
+            style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: 'var(--font-body)' }}>
+            Toca per tancar
+          </p>
+        </div>
+      )}
+
+      {/* Celebració */}
+      {celebrate && (
+        <div onClick={() => setCelebrate(false)}
+          className="fixed inset-0 flex flex-col items-center justify-center"
+          style={{ background: 'rgba(251,245,233,0.96)', zIndex: 60, animation: 'fadeIn .2s ease' }}>
+          {[...Array(26)].map((_, i) => {
+            const cols = ['#D85B3C', '#E0A52E', '#2E6A9E', '#4E8C6A', '#7C5C9E', '#FFD700']
+            return (
+              <div key={i} style={{
+                position: 'absolute', top: 0,
+                left: `${(i * 37) % 100}%`,
+                width: 9, height: 13, borderRadius: 2,
+                background: cols[i % cols.length],
+                animation: `confettiFall ${1.6 + (i % 5) * 0.35}s ${(i % 7) * 0.12}s ease-in forwards`,
+              }} />
+            )
+          })}
+          <div style={{ fontSize: 74, animation: 'bob 1s ease-in-out infinite' }}>🎉</div>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800,
+            color: accent, marginTop: 4,
+          }}>
+            Ets un artista!
+          </div>
+          <div style={{ fontSize: 15, color: 'var(--ink-70)', marginTop: 6, fontFamily: 'var(--font-body)' }}>
+            La teva obra ha quedat preciosa ✨
+          </div>
+          <button onClick={() => setCelebrate(false)}
+            style={{
+              marginTop: 20, padding: '12px 26px', borderRadius: 999, border: 'none',
+              background: accent, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+              fontFamily: 'var(--font-display)',
+              boxShadow: `0 8px 20px ${accent}66`,
+            }}>
+            Seguir pintant
+          </button>
         </div>
       )}
     </div>
