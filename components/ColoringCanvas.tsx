@@ -2,7 +2,24 @@
 
 import { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 
-const MAX_DIM = 700
+const MAX_DIM = 600
+
+// Tria un llindar fort tal que ~targetPct dels píxels el superin (percentil del histograma)
+function adaptiveStrongThreshold(mag: Float32Array, W: number, H: number, targetPct: number): number {
+  const hist = new Uint32Array(256)
+  let total = 0
+  for (let i = 0; i < W * H; i++) {
+    const m = Math.min(255, Math.floor(mag[i]))
+    if (m > 0) { hist[m]++; total++ }
+  }
+  const targetCount = Math.floor(total * (targetPct / 100))
+  let cum = 0
+  for (let bin = 255; bin >= 0; bin--) {
+    cum += hist[bin]
+    if (cum >= targetCount) return bin
+  }
+  return 30
+}
 
 function luma(d: Uint8ClampedArray, i: number) {
   return (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8
@@ -28,10 +45,12 @@ function sobelMagnitudes(src: ImageData): Float32Array {
 
 // Hysteresis: només pinta píxels per sobre del llindar fort,
 // o per sobre del feble si estan connectats a un fort (BFS).
-// Resultat binari → línies netes i contínues.
-function sobelEdges(src: ImageData, weakT: number, strongT: number): ImageData {
+// Resultat binari → línies netes i contínues. Llindars ADAPTATIUS per imatge.
+function sobelEdges(src: ImageData, targetPct = 2.5, weakRatio = 0.5): ImageData {
   const { width: W, height: H } = src
   const mag = sobelMagnitudes(src)
+  const strongT = Math.max(20, adaptiveStrongThreshold(mag, W, H, targetPct))
+  const weakT = Math.max(10, Math.floor(strongT * weakRatio))
   const out = new ImageData(W, H)
   const visited = new Uint8Array(W * H)
   const queue: number[] = []
@@ -205,15 +224,13 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const maskSrc = mc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(maskSrc.data)
 
-          // Canvas per Sobel: blur fort per eliminar la textura interna del quadre
-          // (stippling, pinzellades) i només deixar contorns forts.
+          // Canvas per Sobel: blur fort acumulat (~8px equivalent)
           const blurCanvas = document.createElement('canvas')
           blurCanvas.width = W; blurCanvas.height = H
           const bc = blurCanvas.getContext('2d')!
-          bc.filter = 'blur(3.5px)'
+          bc.filter = 'blur(5px)'
           bc.drawImage(img, 0, 0, W, H)
-          // Segon pas de blur per suavitzar més la textura
-          bc.filter = 'blur(2px)'
+          bc.filter = 'blur(3px)'
           bc.drawImage(blurCanvas, 0, 0, W, H)
           bc.filter = 'none'
           const blurSrc = bc.getImageData(0, 0, W, H)
@@ -222,10 +239,9 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
-          // Hysteresis Sobel — sense dilatació per línies fines
-          // Llindar fort alt → només contorns molt clars
-          // Llindar feble baix → mantenim continuïtat de línia
-          const edges = sobelEdges(blurSrc, 28, 75)
+          // Llindars ADAPTATIUS — cada quadre s'ajusta per tenir la mateixa
+          // densitat de contorns (~targetPct dels píxels superen el llindar fort)
+          const edges = sobelEdges(blurSrc, 2.5, 0.5)
 
           const ec = edge.getContext('2d')!
           ec.putImageData(edges, 0, 0)
