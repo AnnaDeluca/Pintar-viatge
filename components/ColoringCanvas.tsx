@@ -8,9 +8,10 @@ function luma(d: Uint8ClampedArray, i: number) {
   return (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8
 }
 
-function sobelEdges(src: ImageData, threshold: number): ImageData {
+// Computa magnitud Sobel per a tota la imatge
+function sobelMagnitudes(src: ImageData): Float32Array {
   const { data: d, width: W, height: H } = src
-  const out = new ImageData(W, H)
+  const mag = new Float32Array(W * H)
   for (let y = 1; y < H - 1; y++) {
     for (let x = 1; x < W - 1; x++) {
       const gx =
@@ -19,11 +20,77 @@ function sobelEdges(src: ImageData, threshold: number): ImageData {
       const gy =
         -luma(d, ((y-1)*W+x-1)*4) - 2*luma(d, ((y-1)*W+x)*4) - luma(d, ((y-1)*W+x+1)*4) +
          luma(d, ((y+1)*W+x-1)*4) + 2*luma(d, ((y+1)*W+x)*4) + luma(d, ((y+1)*W+x+1)*4)
-      const mag = Math.hypot(gx, gy)
-      if (mag > threshold) {
-        const i = (y * W + x) * 4
-        out.data[i + 3] = Math.min(255, mag * 3.5)
+      mag[y * W + x] = Math.hypot(gx, gy)
+    }
+  }
+  return mag
+}
+
+// Hysteresis: només pinta píxels per sobre del llindar fort,
+// o per sobre del feble si estan connectats a un fort (BFS).
+// Resultat binari → línies netes i contínues.
+function sobelEdges(src: ImageData, weakT: number, strongT: number): ImageData {
+  const { width: W, height: H } = src
+  const mag = sobelMagnitudes(src)
+  const out = new ImageData(W, H)
+  const visited = new Uint8Array(W * H)
+  const queue: number[] = []
+
+  // Sembrar amb tots els píxels forts
+  for (let i = 0; i < W * H; i++) {
+    if (mag[i] >= strongT) {
+      visited[i] = 1
+      queue.push(i)
+    }
+  }
+
+  // BFS connectant els febles als forts (8-connectivitat)
+  while (queue.length) {
+    const pos = queue.pop()!
+    const x = pos % W
+    const y = (pos - x) / W
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue
+        const nx = x + dx, ny = y + dy
+        if (nx < 1 || nx >= W - 1 || ny < 1 || ny >= H - 1) continue
+        const n = ny * W + nx
+        if (visited[n]) continue
+        if (mag[n] >= weakT) {
+          visited[n] = 1
+          queue.push(n)
+        }
       }
+    }
+  }
+
+  // Sortida binària (negre pur)
+  for (let i = 0; i < W * H; i++) {
+    if (visited[i]) {
+      out.data[i * 4 + 3] = 255
+    }
+  }
+  return out
+}
+
+// Dilata les vores 1 píxel per tancar buits petits i fer la línia més gruixuda
+function dilate(img: ImageData): ImageData {
+  const { width: W, height: H, data } = img
+  const out = new ImageData(W, H)
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4
+      if (data[i + 3] > 0) {
+        out.data[i + 3] = 255
+        continue
+      }
+      // Comprova veïns (4-connectivitat)
+      let found = false
+      if (x > 0     && data[i - 4 + 3] > 0) found = true
+      else if (x < W - 1 && data[i + 4 + 3] > 0) found = true
+      else if (y > 0     && data[i - W * 4 + 3] > 0) found = true
+      else if (y < H - 1 && data[i + W * 4 + 3] > 0) found = true
+      if (found) out.data[i + 3] = 255
     }
   }
   return out
@@ -138,12 +205,17 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const maskSrc = mc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(maskSrc.data)
 
-          // Canvas per Sobel: amb blur per eliminar soroll i obtenir contorns nets
+          // Canvas per Sobel: doble blur per eliminar la textura interna del quadre
+          // (sobretot stippling, pinzellades) i només deixar contorns forts.
           const blurCanvas = document.createElement('canvas')
           blurCanvas.width = W; blurCanvas.height = H
           const bc = blurCanvas.getContext('2d')!
-          bc.filter = 'blur(2px)'
+          // Primer pas: blur fort
+          bc.filter = 'blur(4px)'
           bc.drawImage(img, 0, 0, W, H)
+          // Segon pas: tornem a dibuixar amb blur (acumula)
+          bc.filter = 'blur(1.5px)'
+          bc.drawImage(blurCanvas, 0, 0, W, H)
           bc.filter = 'none'
           const blurSrc = bc.getImageData(0, 0, W, H)
 
@@ -151,8 +223,12 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
+          // Hysteresis Sobel + dilatació per línies contínues i netes
+          let edges = sobelEdges(blurSrc, 22, 55)
+          edges = dilate(edges)
+
           const ec = edge.getContext('2d')!
-          ec.putImageData(sobelEdges(blurSrc, 18), 0, 0)
+          ec.putImageData(edges, 0, 0)
         } catch (err) {
           const pc = paint.getContext('2d')
           if (pc) pc.drawImage(img, 0, 0, W, H)
