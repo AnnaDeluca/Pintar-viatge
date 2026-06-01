@@ -42,6 +42,13 @@ html, body {
   font-family: var(--font-body);
   color: var(--ink);
   touch-action: manipulation;
+  /* MAJÚSCULES GLOBAL — l'Elia (i nens petits) llegeixen millor en majúscules */
+  text-transform: uppercase;
+}
+
+/* Excepcions: noms d'usuari, camps de text d'entrada, etc */
+input[type="text"], input[type="search"], textarea, .no-uppercase {
+  text-transform: none;
 }
 
 body {

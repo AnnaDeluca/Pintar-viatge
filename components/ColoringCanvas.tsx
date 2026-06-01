@@ -89,6 +89,8 @@ export interface ColoringCanvasHandle {
   clear: () => void
   undo: () => void
   canUndo: () => boolean
+  /** Exporta la composició actual (pintura + contorns) com a PNG data URL */
+  exportPng: () => string | null
 }
 
 const UNDO_LIMIT = 20  // màxim de passes a guardar (ImageData ocupa molt)
@@ -159,6 +161,26 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       },
       canUndo() {
         return history.current.length > 0
+      },
+      exportPng() {
+        const paint = paintRef.current
+        const edge = edgeRef.current
+        if (!paint || !edge) return null
+        // Compon pintura + vores en un canvas off-screen
+        const out = document.createElement('canvas')
+        out.width = paint.width
+        out.height = paint.height
+        const ctx = out.getContext('2d')
+        if (!ctx) return null
+        // Fons blanc (per si hi ha transparència)
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, out.width, out.height)
+        ctx.drawImage(paint, 0, 0)
+        // Vores amb multiply per simular l'efecte visual del DOM
+        ctx.globalCompositeOperation = 'multiply'
+        ctx.drawImage(edge, 0, 0)
+        ctx.globalCompositeOperation = 'source-over'
+        return out.toDataURL('image/png')
       },
     }), [snapshot])
 

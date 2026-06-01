@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import WorldMap from '@/components/WorldMap'
 import { paintings } from '@/data/paintings'
 
@@ -11,7 +12,21 @@ export default function GalleryPage() {
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
 
       {/* Header */}
-      <header className="shrink-0" style={{ paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
+      <header className="shrink-0 relative" style={{ paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
+        {/* Botó Les meves obres */}
+        <Link href="/les-meves-obres"
+          className="absolute flex items-center gap-1.5 active:scale-95 transition-transform"
+          style={{
+            top: 48, right: 18,
+            padding: '8px 14px', borderRadius: 999,
+            background: 'var(--paper-2)', border: '1px solid var(--line)',
+            color: 'var(--ink)', textDecoration: 'none',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12.5,
+            boxShadow: '0 2px 6px rgba(35,50,62,0.08)',
+          }}>
+          🖼️ Les meves obres
+        </Link>
+
         <div className="flex items-center gap-2 mb-1">
           <span style={{
             display: 'inline-block', width: 26, height: 3, borderRadius: 3, background: ACCENT,

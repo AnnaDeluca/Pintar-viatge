@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { type PaintingMeta } from '@/data/paintings'
 import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } from '@/components/ColoringCanvas'
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
+import { saveArtwork } from '@/lib/artworks'
 
 // Colors extres per omplir paleta si el quadre en té pocs
 const EXTRA_COLORS = ['#1A1A1A','#E63946','#F6C90E','#2E6A9E','#3FA34D','#F4A261']
@@ -143,6 +144,10 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [showFact, setShowFact] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [artworkName, setArtworkName] = useState('')
+  const [childName, setChildName] = useState('')
+  const [savedOk, setSavedOk] = useState(false)
   const handleLoadFail = useCallback(() => setLoadError(true), [])
 
   const handleSvgClick = useCallback((x: number, y: number) => {
@@ -169,6 +174,34 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     }
   }
   const undoAvailable = isDots ? dots.length > 0 : canUndo
+
+  const handleDone = () => {
+    setArtworkName('')
+    setChildName('')
+    setShowSaveModal(true)
+  }
+
+  const handleSaveAndCelebrate = () => {
+    const dataUrl = isDots ? null : canvasRef.current?.exportPng()
+    if (dataUrl) {
+      try {
+        saveArtwork({
+          paintingId: painting.id,
+          paintingTitle: painting.title,
+          artist: painting.artist,
+          emoji: painting.emoji,
+          childName: childName.trim() || 'ARTISTA',
+          artworkName: artworkName.trim() || painting.title,
+          dataUrl,
+        })
+        setSavedOk(true)
+      } catch (e) {
+        console.warn('Save failed', e)
+      }
+    }
+    setShowSaveModal(false)
+    setCelebrate(true)
+  }
 
   // colors del quadre + bàsics, deduplicat
   const artColors = (() => {
@@ -280,10 +313,10 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           )}
         </div>
 
-        {/* Model — referència original */}
+        {/* Model — referència original (petit; tap per veure'l gran) */}
         {painting.imageUrl && !isDots && (
-          <div className="flex flex-col items-center gap-2 shrink-0"
-            style={{ width: 'clamp(140px, 28vw, 280px)' }}>
+          <div className="flex flex-col items-center gap-1.5 shrink-0"
+            style={{ width: 'clamp(64px, 11vw, 110px)' }}>
             <span style={{
               fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: 'rgba(255,255,255,0.55)', fontWeight: 700, fontFamily: 'var(--font-body)',
@@ -310,7 +343,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
 
       {/* He acabat */}
       <div className="flex justify-center pb-1.5 shrink-0">
-        <button onClick={() => setCelebrate(true)}
+        <button onClick={handleDone}
           className="flex items-center gap-1.5 active:scale-95 transition-transform"
           style={{
             padding: '9px 22px', borderRadius: 999, border: 'none',
@@ -503,17 +536,128 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             Ets un artista!
           </div>
           <div style={{ fontSize: 15, color: 'var(--ink-70)', marginTop: 6, fontFamily: 'var(--font-body)' }}>
-            La teva obra ha quedat preciosa ✨
+            {savedOk ? 'La teva obra esta guardada ✨' : 'La teva obra ha quedat preciosa ✨'}
           </div>
-          <button onClick={() => setCelebrate(false)}
+          <div className="flex flex-col items-center gap-2.5" style={{ marginTop: 20 }}>
+            <button onClick={() => setCelebrate(false)}
+              style={{
+                padding: '12px 26px', borderRadius: 999, border: 'none',
+                background: accent, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+                fontFamily: 'var(--font-display)',
+                boxShadow: `0 8px 20px ${accent}66`,
+              }}>
+              Seguir pintant
+            </button>
+            {savedOk && (
+              <Link href="/les-meves-obres"
+                style={{
+                  padding: '10px 20px', borderRadius: 999,
+                  background: 'transparent', color: 'var(--ink-70)', fontSize: 13, fontWeight: 700,
+                  fontFamily: 'var(--font-display)', textDecoration: 'none',
+                  border: '1.5px solid var(--ink-35)',
+                }}>
+                Veure les meves obres
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: posa nom a la teva obra */}
+      {showSaveModal && (
+        <div onClick={() => setShowSaveModal(false)}
+          className="fixed inset-0 flex items-end sm:items-center justify-center px-4"
+          style={{ background: 'rgba(20,26,34,0.55)', zIndex: 70, animation: 'fadeIn .2s ease' }}>
+          <div onClick={e => e.stopPropagation()}
+            className="w-full"
             style={{
-              marginTop: 20, padding: '12px 26px', borderRadius: 999, border: 'none',
-              background: accent, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
-              fontFamily: 'var(--font-display)',
-              boxShadow: `0 8px 20px ${accent}66`,
+              maxWidth: 420, background: 'var(--paper-2)',
+              borderTopLeftRadius: 30, borderTopRightRadius: 30,
+              borderBottomLeftRadius: 22, borderBottomRightRadius: 22,
+              padding: '24px 22px 28px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.3)',
+              animation: 'sheetUp .3s cubic-bezier(.22,1,.36,1)',
             }}>
-            Seguir pintant
-          </button>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 38 }}>🎨</div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+                color: 'var(--ink)', marginTop: 4,
+              }}>
+                Guardem la teva obra!
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--ink-50)', marginTop: 2 }}>
+                Posa-li un nom per recordar-la
+              </div>
+            </div>
+
+            <label className="block" style={{ marginBottom: 14 }}>
+              <span style={{
+                display: 'block', fontSize: 11, fontWeight: 800,
+                color: 'var(--ink-70)', letterSpacing: '0.08em', marginBottom: 6,
+              }}>
+                Nom de l&apos;obra
+              </span>
+              <input
+                type="text"
+                value={artworkName}
+                onChange={e => setArtworkName(e.target.value.toUpperCase().slice(0, 30))}
+                placeholder="EL MEU QUADRE"
+                autoFocus
+                className="no-uppercase"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 14,
+                  border: '2px solid var(--line)', background: 'white',
+                  fontSize: 16, fontWeight: 700, color: 'var(--ink)',
+                  fontFamily: 'var(--font-body)', textTransform: 'uppercase',
+                }}
+              />
+            </label>
+
+            <label className="block" style={{ marginBottom: 18 }}>
+              <span style={{
+                display: 'block', fontSize: 11, fontWeight: 800,
+                color: 'var(--ink-70)', letterSpacing: '0.08em', marginBottom: 6,
+              }}>
+                El teu nom
+              </span>
+              <input
+                type="text"
+                value={childName}
+                onChange={e => setChildName(e.target.value.toUpperCase().slice(0, 20))}
+                placeholder="ARTISTA"
+                className="no-uppercase"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 14,
+                  border: '2px solid var(--line)', background: 'white',
+                  fontSize: 16, fontWeight: 700, color: 'var(--ink)',
+                  fontFamily: 'var(--font-body)', textTransform: 'uppercase',
+                }}
+              />
+            </label>
+
+            <div className="flex gap-2">
+              <button onClick={() => setShowSaveModal(false)}
+                style={{
+                  flex: 1, padding: '13px 0', borderRadius: 999, border: 'none',
+                  background: 'rgba(35,50,62,0.06)', color: 'var(--ink-70)',
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-display)',
+                }}>
+                Tornar
+              </button>
+              <button onClick={handleSaveAndCelebrate}
+                style={{
+                  flex: 2, padding: '13px 0', borderRadius: 999, border: 'none',
+                  background: accent, color: 'white',
+                  fontSize: 14, fontWeight: 800, cursor: 'pointer',
+                  fontFamily: 'var(--font-display)',
+                  boxShadow: `0 6px 18px ${accent}66`,
+                }}>
+                Guardar i celebrar! 🎉
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
