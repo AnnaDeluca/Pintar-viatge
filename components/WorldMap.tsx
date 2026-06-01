@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from 'react-simple-maps'
@@ -76,10 +76,25 @@ const PAINTING_COLOR: Record<string, string> = {
 
 export default function WorldMap() {
   const [activeCluster, setActiveCluster] = useState<string | null>(null)
-  const [zoom, setZoom] = useState(1)
-  const [center, setCenter] = useState<[number, number]>([20, 10])
+  // Restaurar zoom/centre de sessionStorage si existeix (en tornar d'un quadre)
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === 'undefined') return 1
+    const saved = sessionStorage.getItem('map-zoom')
+    return saved ? Number(saved) : 1
+  })
+  const [center, setCenter] = useState<[number, number]>(() => {
+    if (typeof window === 'undefined') return [20, 10]
+    const saved = sessionStorage.getItem('map-center')
+    return saved ? (JSON.parse(saved) as [number, number]) : [20, 10]
+  })
   const router = useRouter()
   const paintingMap = Object.fromEntries(paintings.map(p => [p.id, p]))
+
+  // Persistir zoom/centre quan canviï
+  useEffect(() => {
+    sessionStorage.setItem('map-zoom', String(zoom))
+    sessionStorage.setItem('map-center', JSON.stringify(center))
+  }, [zoom, center])
 
   const showIndividual = zoom >= CLUSTER_THRESHOLD
 
@@ -237,10 +252,11 @@ export default function WorldMap() {
           style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}>
           −
         </button>
-        {zoom > 1.2 && (
-          <button onClick={() => { setZoom(1); setCenter([20, 10]) }}
+        {zoom > 1.05 && (
+          <button onClick={() => { setZoom(1); setCenter([20, 10]); setActiveCluster(null) }}
             className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg active:scale-90 transition-transform"
-            style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            style={{ background: 'rgba(245,87,108,0.25)', backdropFilter: 'blur(8px)', border: '1px solid rgba(245,87,108,0.4)' }}
+            title="Tornar a la vista global">
             🌍
           </button>
         )}

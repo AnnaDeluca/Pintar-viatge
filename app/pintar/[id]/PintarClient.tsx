@@ -221,17 +221,35 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               </button>
             </div>
 
-            {/* Slider mida pinzell (només si tool=brush) */}
+            {/* Mides predefinides del pinzell */}
             {tool === 'brush' && (
-              <>
-                <div className="w-6 h-6 rounded-full shrink-0 border border-white/20"
-                  style={{ background: selectedColor, width: Math.max(8, brushSize * 0.6), height: Math.max(8, brushSize * 0.6) }}/>
-                <input type="range" min={6} max={60} step={2}
-                  value={brushSize}
-                  onChange={e => setBrushSize(Number(e.target.value))}
-                  className="flex-1"
-                  style={{ accentColor: '#f5576c' }}/>
-              </>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {[
+                  { label: 'S', size: 10 },
+                  { label: 'M', size: 24 },
+                  { label: 'L', size: 42 },
+                  { label: 'XL', size: 70 },
+                ].map(({ label, size }) => {
+                  const active = brushSize === size
+                  return (
+                    <button key={label} onClick={() => setBrushSize(size)}
+                      className="flex items-center justify-center rounded-full transition-all active:scale-90"
+                      style={{
+                        width: 36, height: 36,
+                        background: active ? 'rgba(245,87,108,0.25)' : 'rgba(255,255,255,0.08)',
+                        border: `1.5px solid ${active ? '#f5576c' : 'rgba(255,255,255,0.15)'}`,
+                      }}>
+                      <div className="rounded-full"
+                        style={{
+                          background: selectedColor,
+                          width: Math.min(28, 6 + size * 0.32),
+                          height: Math.min(28, 6 + size * 0.32),
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.2)',
+                        }}/>
+                    </button>
+                  )
+                })}
+              </div>
             )}
 
             {/* Espaiador + botó paleta */}
