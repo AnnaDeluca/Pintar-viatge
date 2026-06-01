@@ -265,13 +265,14 @@ export default function WorldMap() {
   })
   const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
 
-  // Mesura del contenidor (responsive)
+  // Mesura del contenidor — usem TANT l'amplada com l'alçada reals,
+  // així el mapa s'adapta a l'espai real i no es retalla per overflow
   useEffect(() => {
     if (!containerRef.current) return
     const el = containerRef.current
     const update = () => {
-      const w = el.clientWidth
-      const h = Math.max(180, Math.round(w * 0.62))
+      const w = Math.max(200, el.clientWidth)
+      const h = Math.max(180, el.clientHeight)
       setDims({ w, h })
     }
     update()
@@ -305,8 +306,12 @@ export default function WorldMap() {
           background: 'var(--ocean)',
           border: '1px solid var(--land-stroke)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 14px 30px rgba(35,50,62,0.14)',
+          aspectRatio: '16 / 9',
+          maxHeight: '100%',
         }}>
-        <svg viewBox={`0 0 ${dims.w} ${dims.h}`} width="100%"
+        <svg viewBox={`0 0 ${dims.w} ${dims.h}`}
+          width="100%" height="100%"
+          preserveAspectRatio="xMidYMid meet"
           style={{ display: 'block', touchAction: 'none', cursor: zoom > 1 ? 'grab' : 'default' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

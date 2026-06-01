@@ -77,6 +77,39 @@ function EraserDab({ selected, onSelect }: { selected: boolean; onSelect: () => 
   )
 }
 
+// Dab amb input type=color al damunt — selector lliure de qualsevol color
+function RainbowDab({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <label
+      aria-label="Triar color personalitzat"
+      className="shrink-0 relative cursor-pointer"
+      style={{
+        width: 46, height: 46, borderRadius: '50%',
+        // Cercle arc de Sant Martí
+        background: 'conic-gradient(from 0deg, #E63946, #F4A261, #F6C90E, #57CC99, #4CC9F0, #2364AA, #8B5CF6, #D946EF, #E63946)',
+        transition: 'transform .13s cubic-bezier(.22,1,.36,1)',
+        boxShadow: '0 4px 8px rgba(60,40,20,0.30), inset -2px -3px 5px rgba(0,0,0,0.22), inset 2px 3px 5px rgba(255,255,255,0.55)',
+      }}>
+      {/* Centre amb el color actual + + */}
+      <span style={{
+        position: 'absolute', inset: 8, borderRadius: '50%',
+        background: value.toUpperCase() === '#FFFFFF' ? '#FBF5E9' : value,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'rgba(74,58,32,0.8)', fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-body)',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)',
+      }}>+</span>
+      <input
+        type="color"
+        value={value.toUpperCase() === '#FFFFFF' ? '#E63946' : value}
+        onChange={e => onChange(e.target.value)}
+        className="absolute inset-0 opacity-0 cursor-pointer"
+        style={{ width: '100%', height: '100%' }}
+        aria-label="Color personalitzat"
+      />
+    </label>
+  )
+}
+
 function StudioBtn({ children, onClick, ariaLabel }: { children: React.ReactNode; onClick: () => void; ariaLabel: string }) {
   return (
     <button
@@ -388,6 +421,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           <div className="flex flex-wrap justify-center items-center"
             style={{ gap: '13px 15px', padding: '4px 20px 0' }}>
             <EraserDab selected={isErasing} onSelect={() => setSelectedColor('#FFFFFF')} />
+            <RainbowDab value={selectedColor} onChange={setSelectedColor} />
             <span style={{ width: 1, height: 34, background: 'rgba(74,58,32,0.16)', alignSelf: 'center' }} />
             {artColors.map(c => (
               <PaintDab key={c} color={c}
