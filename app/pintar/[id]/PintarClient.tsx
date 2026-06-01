@@ -222,11 +222,11 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
 
         {/* Model — referència original */}
         {painting.imageUrl && !isDots && (
-          <div className="flex flex-col items-center gap-1.5 shrink-0"
-            style={{ width: 'clamp(90px, 22vw, 180px)' }}>
+          <div className="flex flex-col items-center gap-2 shrink-0"
+            style={{ width: 'clamp(140px, 28vw, 280px)' }}>
             <span style={{
-              fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.45)', fontWeight: 700, fontFamily: 'var(--font-body)',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.55)', fontWeight: 700, fontFamily: 'var(--font-body)',
             }}>
               Model
             </span>
@@ -241,7 +241,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               <img src={painting.thumbUrl || painting.imageUrl} alt={painting.title}
                 className="w-full block" />
             </button>
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-body)' }}>
+            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-body)' }}>
               toca per veure
             </span>
           </div>

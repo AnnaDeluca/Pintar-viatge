@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 
-const MAX_DIM = 900
+const MAX_DIM = 700
 
 function luma(d: Uint8ClampedArray, i: number) {
   return (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8
@@ -205,16 +205,15 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           const maskSrc = mc.getImageData(0, 0, W, H)
           maskData.current = new Uint8ClampedArray(maskSrc.data)
 
-          // Canvas per Sobel: doble blur per eliminar la textura interna del quadre
-          // (sobretot stippling, pinzellades) i només deixar contorns forts.
+          // Canvas per Sobel: blur fort per eliminar la textura interna del quadre
+          // (stippling, pinzellades) i només deixar contorns forts.
           const blurCanvas = document.createElement('canvas')
           blurCanvas.width = W; blurCanvas.height = H
           const bc = blurCanvas.getContext('2d')!
-          // Primer pas: blur fort
-          bc.filter = 'blur(4px)'
+          bc.filter = 'blur(3.5px)'
           bc.drawImage(img, 0, 0, W, H)
-          // Segon pas: tornem a dibuixar amb blur (acumula)
-          bc.filter = 'blur(1.5px)'
+          // Segon pas de blur per suavitzar més la textura
+          bc.filter = 'blur(2px)'
           bc.drawImage(blurCanvas, 0, 0, W, H)
           bc.filter = 'none'
           const blurSrc = bc.getImageData(0, 0, W, H)
@@ -223,9 +222,10 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
 
-          // Hysteresis Sobel + dilatació per línies contínues i netes
-          let edges = sobelEdges(blurSrc, 22, 55)
-          edges = dilate(edges)
+          // Hysteresis Sobel — sense dilatació per línies fines
+          // Llindar fort alt → només contorns molt clars
+          // Llindar feble baix → mantenim continuïtat de línia
+          const edges = sobelEdges(blurSrc, 28, 75)
 
           const ec = edge.getContext('2d')!
           ec.putImageData(edges, 0, 0)
