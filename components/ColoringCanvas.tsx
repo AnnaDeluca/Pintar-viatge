@@ -67,19 +67,21 @@ function floodFill(
 export interface ColoringCanvasHandle { clear: () => void }
 
 export type Tool = 'fill' | 'brush'
+export type BrushType = 'round' | 'marker' | 'crayon' | 'pencil'
 
 interface Props {
   imageUrl: string
   selectedColor: string
   tool?: Tool
   brushSize?: number
+  brushType?: BrushType
   onLoadFail?: () => void
   className?: string
   style?: React.CSSProperties
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, onLoadFail, className = '', style }, ref) {
+  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
@@ -187,16 +189,63 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
     const drawBrushStroke = (x0: number, y0: number, x1: number, y1: number) => {
       const paint = paintRef.current!
       const pc = paint.getContext('2d')!
-      // Brush size escalat segons mida real del canvas (sense importar zoom CSS)
+      // Mida normalitzada a l'amplada real del canvas
       const r = (brushSize * paint.width) / 600
+
+      pc.save()
+      pc.globalAlpha = 1
       pc.strokeStyle = selectedColor
-      pc.lineWidth = r * 2
+      pc.fillStyle = selectedColor
       pc.lineCap = 'round'
       pc.lineJoin = 'round'
-      pc.beginPath()
-      pc.moveTo(x0, y0)
-      pc.lineTo(x1, y1)
-      pc.stroke()
+
+      if (brushType === 'marker') {
+        // Marcador: traç pla amb cantons quadrats, semi-translúcid (capes acumulen)
+        pc.lineWidth = r * 2
+        pc.lineCap = 'square'
+        pc.globalAlpha = 0.6
+        pc.beginPath()
+        pc.moveTo(x0, y0)
+        pc.lineTo(x1, y1)
+        pc.stroke()
+      } else if (brushType === 'crayon') {
+        // Cera: traç amb textura granulada (punts dispersos al llarg de la línia)
+        const dx = x1 - x0, dy = y1 - y0
+        const dist = Math.max(1, Math.hypot(dx, dy))
+        const steps = Math.ceil(dist)
+        pc.globalAlpha = 0.45
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps
+          const cx = x0 + dx * t
+          const cy = y0 + dy * t
+          // 3-5 puntets dispersos al voltant del centre
+          const dots = 3 + Math.floor(Math.random() * 3)
+          for (let j = 0; j < dots; j++) {
+            const angle = Math.random() * Math.PI * 2
+            const dr = Math.random() * r
+            pc.beginPath()
+            pc.arc(cx + Math.cos(angle) * dr, cy + Math.sin(angle) * dr, r * 0.35, 0, Math.PI * 2)
+            pc.fill()
+          }
+        }
+      } else if (brushType === 'pencil') {
+        // Llapis: traç fi semi-translúcid (acumula amb passades)
+        pc.lineWidth = Math.max(1, r * 0.6)
+        pc.globalAlpha = 0.55
+        pc.beginPath()
+        pc.moveTo(x0, y0)
+        pc.lineTo(x1, y1)
+        pc.stroke()
+      } else {
+        // Rodó (per defecte): traç llis i opac
+        pc.lineWidth = r * 2
+        pc.beginPath()
+        pc.moveTo(x0, y0)
+        pc.lineTo(x1, y1)
+        pc.stroke()
+      }
+
+      pc.restore()
     }
 
     const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {

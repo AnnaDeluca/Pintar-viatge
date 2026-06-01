@@ -209,11 +209,53 @@ function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
   )
 }
 
+const MIN_ZOOM = 1
+const MAX_ZOOM = 6
+
 export default function WorldMap() {
   const router = useRouter()
   const [region, setRegion] = useState<Region | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dims, setDims] = useState({ w: 380, h: 264 })
+
+  // Zoom & pan — recuperat des de sessionStorage
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === 'undefined') return 1
+    return Number(sessionStorage.getItem('map-zoom') || '1')
+  })
+  const [pan, setPan] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === 'undefined') return { x: 0, y: 0 }
+    const saved = sessionStorage.getItem('map-pan')
+    return saved ? JSON.parse(saved) : { x: 0, y: 0 }
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem('map-zoom', String(zoom))
+    sessionStorage.setItem('map-pan', JSON.stringify(pan))
+  }, [zoom, pan])
+
+  // Drag per moure el mapa amb zoom
+  const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null)
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (zoom <= 1) return
+    ;(e.target as Element).setPointerCapture?.(e.pointerId)
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y }
+  }
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!dragRef.current) return
+    const dx = e.clientX - dragRef.current.startX
+    const dy = e.clientY - dragRef.current.startY
+    setPan({ x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy })
+  }
+  const onPointerUp = () => { dragRef.current = null }
+
+  const zoomIn  = () => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))
+  const zoomOut = () => setZoom(z => {
+    const next = Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2))
+    if (next <= 1) setPan({ x: 0, y: 0 })
+    return next
+  })
+  const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
 
   // Mesura del contenidor (responsive)
   useEffect(() => {
@@ -256,7 +298,12 @@ export default function WorldMap() {
           border: '1px solid var(--land-stroke)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 14px 30px rgba(35,50,62,0.14)',
         }}>
-        <svg viewBox={`0 0 ${dims.w} ${dims.h}`} width="100%" style={{ display: 'block' }}>
+        <svg viewBox={`0 0 ${dims.w} ${dims.h}`} width="100%"
+          style={{ display: 'block', touchAction: 'none', cursor: zoom > 1 ? 'grab' : 'default' }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}>
           {!geo && !err && (
             <text x={dims.w / 2} y={dims.h / 2} textAnchor="middle" fontSize="12"
               fill="var(--ink-50)" style={{ fontFamily: 'var(--font-body)' }}>
@@ -270,6 +317,9 @@ export default function WorldMap() {
             </text>
           )}
 
+          {/* Grup transformat per zoom + pan */}
+          <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+
           {/* Països */}
           {geo && geo.paths.map((p, i) => (
             <path key={i} d={p.d ?? ''}
@@ -279,24 +329,26 @@ export default function WorldMap() {
                   : 'var(--land)'
               }
               stroke="var(--land-stroke)"
-              strokeWidth={0.5}
+              strokeWidth={0.5 / zoom}
               strokeLinejoin="round" />
           ))}
 
           {/* Ruta de viatge */}
           {geo && routeD && (
             <path d={routeD} fill="none" stroke="var(--ochre)"
-              strokeWidth={1.4} strokeDasharray="2 4" strokeLinecap="round" opacity={0.85} />
+              strokeWidth={1.4 / zoom} strokeDasharray={`${2 / zoom} ${4 / zoom}`}
+              strokeLinecap="round" opacity={0.85} />
           )}
 
-          {/* Pins de regió */}
+          {/* Pins de regió — escalats inversament al zoom per mantenir mida */}
           {geo && REGIONS.map(r => {
             const p = geo.pins[r.id]
             if (!p) return null
             const hex = TONE_HEX[r.tone]
             const count = r.paintingIds.filter(id => paintingMap[id]).length
+            const s = 1 / zoom
             return (
-              <g key={r.id} transform={`translate(${p[0]},${p[1]})`}
+              <g key={r.id} transform={`translate(${p[0]},${p[1]}) scale(${s})`}
                 style={{ cursor: 'pointer' }} onClick={() => setRegion(r)}>
                 {/* Anell pulsant */}
                 <circle r={13} fill={hex} opacity={0.18}>
@@ -330,6 +382,9 @@ export default function WorldMap() {
             )
           })}
 
+          </g>
+          {/* Fi del grup transformat */}
+
           {/* Rosa dels vents */}
           {geo && (
             <g transform={`translate(40,${dims.h - 42})`} opacity={0.9} style={{ pointerEvents: 'none' }}>
@@ -346,6 +401,39 @@ export default function WorldMap() {
             </g>
           )}
         </svg>
+
+        {/* Botons de zoom */}
+        <div className="absolute bottom-3 right-3 flex flex-col gap-1.5">
+          <button onClick={zoomIn}
+            aria-label="Ampliar"
+            className="flex items-center justify-center active:scale-90 transition-transform"
+            style={{
+              width: 36, height: 36, borderRadius: 12, border: '1px solid var(--line)',
+              background: 'var(--paper-2)', color: 'var(--ink)', fontSize: 18, fontWeight: 700,
+              boxShadow: '0 2px 6px rgba(35,50,62,0.10)',
+            }}>+</button>
+          <button onClick={zoomOut}
+            aria-label="Reduir"
+            disabled={zoom <= MIN_ZOOM}
+            className="flex items-center justify-center active:scale-90 transition-transform"
+            style={{
+              width: 36, height: 36, borderRadius: 12, border: '1px solid var(--line)',
+              background: 'var(--paper-2)', color: 'var(--ink)', fontSize: 18, fontWeight: 700,
+              boxShadow: '0 2px 6px rgba(35,50,62,0.10)',
+              opacity: zoom <= MIN_ZOOM ? 0.4 : 1,
+            }}>−</button>
+          {zoom > 1.05 && (
+            <button onClick={resetZoom}
+              aria-label="Vista global"
+              className="flex items-center justify-center active:scale-90 transition-transform"
+              style={{
+                width: 36, height: 36, borderRadius: 12, border: '1px solid var(--terracotta)',
+                background: 'color-mix(in srgb, var(--terracotta) 16%, white)',
+                color: 'var(--terracotta)', fontSize: 16,
+                boxShadow: '0 2px 6px rgba(216,91,60,0.18)',
+              }}>🌍</button>
+          )}
+        </div>
       </div>
 
       {/* Chips de regió */}

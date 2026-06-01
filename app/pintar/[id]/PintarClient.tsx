@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { type PaintingMeta } from '@/data/paintings'
-import ColoringCanvas, { type ColoringCanvasHandle, type Tool } from '@/components/ColoringCanvas'
+import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } from '@/components/ColoringCanvas'
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 
 // Colors extres per omplir paleta si el quadre en té pocs
@@ -102,7 +102,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const canvasRef = useRef<ColoringCanvasHandle>(null)
   const [selectedColor, setSelectedColor] = useState(painting.palette[0] ?? '#E63946')
   const [tool, setTool] = useState<Tool>('fill')
-  const [brushSize, setBrushSize] = useState(24)
+  const [brushType, setBrushType] = useState<BrushType>('round')
+  const [brushSize, setBrushSize] = useState(8)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
   const [showFact, setShowFact] = useState(false)
@@ -194,6 +195,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               selectedColor={selectedColor}
               tool={tool}
               brushSize={brushSize}
+              brushType={brushType}
               onLoadFail={handleLoadFail}
               className="overflow-hidden"
               // Marc blanc tipus "passe-partout" + ombra
@@ -221,7 +223,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         {/* Model — referència original */}
         {painting.imageUrl && !isDots && (
           <div className="flex flex-col items-center gap-1.5 shrink-0"
-            style={{ width: 'clamp(60px, 12vw, 100px)' }}>
+            style={{ width: 'clamp(90px, 22vw, 180px)' }}>
             <span style={{
               fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
               color: 'rgba(255,255,255,0.45)', fontWeight: 700, fontFamily: 'var(--font-body)',
@@ -295,7 +297,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           </div>
 
           {/* Eines: fill / brush (només si no és dots) */}
-          <div className="flex items-center justify-center gap-3 px-5 pb-3">
+          <div className="flex items-center justify-center gap-2 px-4 pb-2.5 flex-wrap">
             <div className="flex rounded-full overflow-hidden"
               style={{ background: 'rgba(74,58,32,0.08)', border: '1px solid rgba(74,58,32,0.12)' }}>
               <button onClick={() => setTool('fill')}
@@ -320,29 +322,65 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               </button>
             </div>
 
-            {/* Mides de pinzell (només si tool=brush) */}
+            {/* Tipus de pinzell + mides (només si tool=brush) */}
             {tool === 'brush' && (
-              <div className="flex items-center gap-1.5">
-                {[{ l: 'S', s: 10 }, { l: 'M', s: 24 }, { l: 'L', s: 42 }, { l: 'XL', s: 70 }].map(({ l, s }) => {
-                  const active = brushSize === s
-                  return (
-                    <button key={l} onClick={() => setBrushSize(s)}
-                      className="flex items-center justify-center rounded-full active:scale-90 transition-all"
-                      style={{
-                        width: 32, height: 32,
-                        background: active ? `${accent}33` : 'rgba(74,58,32,0.06)',
-                        border: `1.5px solid ${active ? accent : 'rgba(74,58,32,0.15)'}`,
-                      }}>
-                      <div className="rounded-full" style={{
-                        background: selectedColor,
-                        width: Math.min(22, 5 + s * 0.26),
-                        height: Math.min(22, 5 + s * 0.26),
-                        boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
-                      }} />
-                    </button>
-                  )
-                })}
-              </div>
+              <>
+                {/* Tipus */}
+                <div className="flex items-center gap-1">
+                  {([
+                    { t: 'round',  icon: '●',  label: 'Rodó' },
+                    { t: 'marker', icon: '▮',  label: 'Retolador' },
+                    { t: 'crayon', icon: '✶',  label: 'Cera' },
+                    { t: 'pencil', icon: '✎',  label: 'Llapis' },
+                  ] as const).map(({ t, icon, label }) => {
+                    const active = brushType === t
+                    return (
+                      <button key={t} onClick={() => setBrushType(t)}
+                        title={label}
+                        className="flex items-center justify-center active:scale-90 transition-all"
+                        style={{
+                          width: 30, height: 30, borderRadius: 10,
+                          fontSize: 13, fontWeight: 700,
+                          color: active ? accent : 'rgba(74,58,32,0.7)',
+                          background: active ? `${accent}1f` : 'rgba(74,58,32,0.06)',
+                          border: `1.5px solid ${active ? accent : 'rgba(74,58,32,0.15)'}`,
+                        }}>
+                        {icon}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Mides — més fines */}
+                <div className="flex items-center gap-1.5">
+                  {[
+                    { l: 'XS', s: 3 },
+                    { l: 'S',  s: 8 },
+                    { l: 'M',  s: 18 },
+                    { l: 'L',  s: 36 },
+                    { l: 'XL', s: 60 },
+                  ].map(({ l, s }) => {
+                    const active = brushSize === s
+                    return (
+                      <button key={l} onClick={() => setBrushSize(s)}
+                        title={l}
+                        className="flex items-center justify-center rounded-full active:scale-90 transition-all"
+                        style={{
+                          width: 30, height: 30,
+                          background: active ? `${accent}33` : 'rgba(74,58,32,0.06)',
+                          border: `1.5px solid ${active ? accent : 'rgba(74,58,32,0.15)'}`,
+                        }}>
+                        <div className="rounded-full" style={{
+                          background: selectedColor,
+                          width: Math.max(2, Math.min(20, 2 + s * 0.3)),
+                          height: Math.max(2, Math.min(20, 2 + s * 0.3)),
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
+                        }} />
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
 
