@@ -84,12 +84,20 @@ function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean 
         const topo = await res.json()
         // @ts-expect-error topojson types loose
         const fc = feature(topo, topo.objects.countries) as FeatureCollection
-        const proj = geoNaturalEarth1().fitSize([W, H], fc)
+        // Exclou l'Antàrtida (ISO 010) del càlcul de bounding box —
+        // si no, empeny tot el món populat cap a dalt i Sud-àfrica desapareix
+        const fcForFit: FeatureCollection = {
+          type: 'FeatureCollection',
+          features: fc.features.filter((f: Feature) => Number((f as any).id) !== 10),
+        }
+        const proj = geoNaturalEarth1().fitSize([W, H], fcForFit)
         const path = geoPath(proj)
-        const paths = fc.features.map((f: Feature) => ({
-          d: path(f),
-          tone: HIGHLIGHT[Number((f as any).id)] ?? null,
-        }))
+        const paths = fc.features
+          .filter((f: Feature) => Number((f as any).id) !== 10)  // tampoc la dibuixem
+          .map((f: Feature) => ({
+            d: path(f),
+            tone: HIGHLIGHT[Number((f as any).id)] ?? null,
+          }))
         const pins: Record<string, [number, number]> = {}
         REGIONS.forEach(r => {
           const p = proj(r.coords)
