@@ -47,7 +47,7 @@ const REGIONS: Region[] = [
     paintingIds: [
       'lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia',
       'sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez',
-      'lewitt','kandinsky','klimt',
+      'miro','lewitt','kandinsky','klimt',
     ],
   },
   {

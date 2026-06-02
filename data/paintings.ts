@@ -1,3 +1,11 @@
+export interface Museum {
+  name: string
+  city: string
+  country: string
+  url?: string
+  mapsQuery?: string
+}
+
 export interface PaintingMeta {
   id: string
   title: string
@@ -12,7 +20,8 @@ export interface PaintingMeta {
   mechanic?: 'fill' | 'dots'
   imageUrl?: string
   thumbUrl?: string
-  coords?: [number, number]  // [longitud, latitud]
+  coords?: [number, number]
+  museum?: Museum
 }
 
 export const paintings: PaintingMeta[] = [
@@ -22,13 +31,13 @@ export const paintings: PaintingMeta[] = [
     title: 'El bisó',
     artist: 'Art rupestre de Lascaux',
     year: '~15 000 a.C.',
-    country: 'França',
-    flag: '🪨', emoji: '🦬',
+    country: 'França', flag: '🪨', emoji: '🦬',
     funFact: 'Aquestes pintures les van fer persones fa 17.000 anys, amb branques i pols de terra!',
     palette: ['#8B4513','#D2691E','#F4A460','#1A1A1A','#C4A35A','#F5DEB3','#8B0000','#654321'],
     regions: [],
     imageUrl: '/paintings/lascaux.jpg', thumbUrl: '/paintings/lascaux-thumb.jpg',
     coords: [1.1, 45.0],
+    museum: { name: 'Lascaux IV (rèplica oficial)', city: 'Montignac', country: 'França', url: 'https://www.lascaux.fr', mapsQuery: 'Lascaux IV Montignac France' },
   },
   // ── Àsia Oriental ──────────────────────────────────────────────
   {
@@ -41,6 +50,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/hokusai.jpg', thumbUrl: '/paintings/hokusai-thumb.jpg',
     coords: [139.7, 35.7],
+    museum: { name: 'Museu Metropolità d\'Art', city: 'Nova York', country: 'EUA', url: 'https://www.metmuseum.org', mapsQuery: 'Metropolitan Museum of Art New York' },
   },
   {
     id: 'kusama',
@@ -51,6 +61,7 @@ export const paintings: PaintingMeta[] = [
     palette: ['#1A1A1A','#E63946','#2364AA','#57CC99','#8B5CF6','#F4A261','#F6C90E','#FF6B6B'],
     regions: [], mechanic: 'dots',
     coords: [139.7, 36.0],
+    museum: { name: 'Yayoi Kusama Museum', city: 'Tòquio', country: 'Japó', url: 'https://yayoikusamamuseum.jp', mapsQuery: 'Yayoi Kusama Museum Tokyo' },
   },
   // ── Amèrica del Nord ───────────────────────────────────────────
   {
@@ -63,6 +74,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/homer.jpg', thumbUrl: '/paintings/homer-thumb.jpg',
     coords: [-82.5, 41.0],
+    museum: { name: 'Butler Institute of American Art', city: 'Youngstown, Ohio', country: 'EUA', url: 'https://butlerart.com', mapsQuery: 'Butler Institute of American Art Youngstown Ohio' },
   },
   {
     id: 'sargent',
@@ -74,6 +86,44 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/sargent.jpg', thumbUrl: '/paintings/sargent-thumb.jpg',
     coords: [-1.8, 52.1],
+    museum: { name: 'Tate Britain', city: 'Londres', country: 'Regne Unit', url: 'https://www.tate.org.uk/visit/tate-britain', mapsQuery: 'Tate Britain London' },
+  },
+  // ── Europa (Espanya / Catalunya) ───────────────────────────────
+  {
+    id: 'miro',
+    title: 'Dona i Ocell',
+    artist: 'Joan Miró',
+    year: 1983, country: 'Espanya', flag: '🇪🇸', emoji: '🐦',
+    funFact: 'Aquesta escultura gegant de 22 metres és al Parc Joan Miró de Barcelona. El Miró era català i li agradaven molt els colors vius i les formes de somni!',
+    palette: ['#F6C90E','#E63946','#2364AA','#57CC99','#1A1A1A','#FFFFFF','#8B5CF6','#F4A261'],
+    regions: [],
+    imageUrl: '/paintings/miro.jpg', thumbUrl: '/paintings/miro-thumb.jpg',
+    coords: [2.15, 41.375],
+    museum: { name: 'Parc Joan Miró', city: 'Barcelona', country: 'Espanya', url: 'https://www.barcelona.cat', mapsQuery: 'Parc Joan Miro Barcelona' },
+  },
+  {
+    id: 'lewitt',
+    title: 'Mural de Barcelona',
+    artist: 'Sol LeWitt',
+    year: 2002, country: 'Espanya', flag: '🇪🇸', emoji: '🔷',
+    funFact: 'El Sol LeWitt no pintava els seus murals: donava instruccions als ajudants! Aquest mural ENORME el pots veure al vestíbul del CaixaForum Barcelona.',
+    palette: ['#E63946','#F6C90E','#2364AA','#1A1A1A','#FFFFFF','#57CC99','#8B5CF6','#F4A261'],
+    regions: [],
+    imageUrl: '/paintings/lewitt.jpg', thumbUrl: '/paintings/lewitt-thumb.jpg',
+    coords: [2.15, 41.37],
+    museum: { name: 'CaixaForum Barcelona', city: 'Barcelona', country: 'Espanya', url: 'https://caixaforum.org/barcelona', mapsQuery: 'CaixaForum Barcelona' },
+  },
+  {
+    id: 'velazquez',
+    title: 'Les Menines',
+    artist: 'Diego Velázquez',
+    year: 1656, country: 'Espanya', flag: '🇪🇸', emoji: '👑',
+    funFact: 'En aquest quadre, el pintor es va retratar a ell mateix pintant! Es veu al fons amb el pinzell.',
+    palette: ['#1A1A2E','#8B4513','#F5DEB3','#E63946','#2364AA','#4CC9F0','#654321','#C8A882'],
+    regions: [],
+    imageUrl: '/paintings/velazquez.jpg', thumbUrl: '/paintings/velazquez-thumb.jpg',
+    coords: [-3.7, 40.4],
+    museum: { name: 'Museo del Prado', city: 'Madrid', country: 'Espanya', url: 'https://www.museodelprado.es', mapsQuery: 'Museo del Prado Madrid' },
   },
   // ── Europa (Itàlia) ────────────────────────────────────────────
   {
@@ -86,6 +136,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/botticelli.jpg', thumbUrl: '/paintings/botticelli-thumb.jpg',
     coords: [11.2, 43.8],
+    museum: { name: 'Galeria Uffizi', city: 'Florència', country: 'Itàlia', url: 'https://www.uffizi.it', mapsQuery: 'Uffizi Gallery Florence Italy' },
   },
   {
     id: 'artemisia',
@@ -97,6 +148,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/artemisia.jpg', thumbUrl: '/paintings/artemisia-thumb.jpg',
     coords: [12.5, 41.9],
+    museum: { name: 'Wadsworth Atheneum', city: 'Hartford, Connecticut', country: 'EUA', url: 'https://www.thewadsworth.org', mapsQuery: 'Wadsworth Atheneum Hartford Connecticut' },
   },
   {
     id: 'sofonisba',
@@ -108,6 +160,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/sofonisba.jpg', thumbUrl: '/paintings/sofonisba-thumb.jpg',
     coords: [9.7, 45.4],
+    museum: { name: 'Museu Nacional de Poznań', city: 'Poznań', country: 'Polònia', url: 'https://mnp.art.pl', mapsQuery: 'National Museum Poznan Poland' },
   },
   // ── Europa (França) ────────────────────────────────────────────
   {
@@ -120,6 +173,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/kahlo.jpg', thumbUrl: '/paintings/kahlo-thumb.jpg',
     coords: [2.3, 48.9],
+    museum: { name: 'Musée d\'Orsay', city: 'París', country: 'França', url: 'https://www.musee-orsay.fr', mapsQuery: 'Musée d Orsay Paris' },
   },
   {
     id: 'morisot',
@@ -131,6 +185,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/morisot.jpg', thumbUrl: '/paintings/morisot-thumb.jpg',
     coords: [2.4, 48.8],
+    museum: { name: 'Musée d\'Orsay', city: 'París', country: 'França', url: 'https://www.musee-orsay.fr', mapsQuery: 'Musée d Orsay Paris' },
   },
   {
     id: 'matisse',
@@ -142,6 +197,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/matisse.jpg', thumbUrl: '/paintings/matisse-thumb.jpg',
     coords: [2.4, 47.5],
+    museum: { name: 'Hermitage', city: 'Sant Petersburg', country: 'Rússia', url: 'https://www.hermitagemuseum.org', mapsQuery: 'Hermitage Museum Saint Petersburg Russia' },
   },
   {
     id: 'vigee',
@@ -153,6 +209,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/vigee.jpg', thumbUrl: '/paintings/vigee-thumb.jpg',
     coords: [2.3, 48.85],
+    museum: { name: 'National Gallery', city: 'Londres', country: 'Regne Unit', url: 'https://www.nationalgallery.org.uk', mapsQuery: 'National Gallery London' },
   },
   // ── Europa (Holanda) ───────────────────────────────────────────
   {
@@ -165,6 +222,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/vangogh.jpg', thumbUrl: '/paintings/vangogh-thumb.jpg',
     coords: [4.9, 52.4],
+    museum: { name: 'Museu Van Gogh', city: 'Amsterdam', country: 'Holanda', url: 'https://www.vangoghmuseum.nl', mapsQuery: 'Van Gogh Museum Amsterdam' },
   },
   {
     id: 'cassatt',
@@ -176,6 +234,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/cassatt.jpg', thumbUrl: '/paintings/cassatt-thumb.jpg',
     coords: [4.9, 52.5],
+    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago' },
   },
   {
     id: 'vermeer',
@@ -187,6 +246,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/vermeer.jpg', thumbUrl: '/paintings/vermeer-thumb.jpg',
     coords: [4.4, 52.0],
+    museum: { name: 'Mauritshuis', city: 'La Haia', country: 'Holanda', url: 'https://www.mauritshuis.nl', mapsQuery: 'Mauritshuis The Hague Netherlands' },
   },
   {
     id: 'mondrian',
@@ -198,6 +258,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/mondrian.jpg', thumbUrl: '/paintings/mondrian-thumb.jpg',
     coords: [4.9, 52.2],
+    museum: { name: 'Kunsthaus Zürich', city: 'Zuric', country: 'Suïssa', url: 'https://www.kunsthaus.ch', mapsQuery: 'Kunsthaus Zurich Switzerland' },
   },
   // ── Europa (Noruega) ───────────────────────────────────────────
   {
@@ -210,29 +271,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/munch.jpg', thumbUrl: '/paintings/munch-thumb.jpg',
     coords: [10.7, 59.9],
-  },
-  // ── Europa (Espanya) ───────────────────────────────────────────
-  {
-    id: 'lewitt',
-    title: 'Mural de Barcelona',
-    artist: 'Sol LeWitt',
-    year: 2002, country: 'Espanya', flag: '🇪🇸', emoji: '🔷',
-    funFact: 'El Sol LeWitt no pintava els seus murals: donava instruccions als ajudants! Aquest mural ENORME el pots veure al vestíbul del CaixaForum Barcelona.',
-    palette: ['#E63946','#F6C90E','#2364AA','#1A1A1A','#FFFFFF','#57CC99','#8B5CF6','#F4A261'],
-    regions: [],
-    imageUrl: '/paintings/lewitt.jpg', thumbUrl: '/paintings/lewitt-thumb.jpg',
-    coords: [2.15, 41.38],
-  },
-  {
-    id: 'velazquez',
-    title: 'Les Menines',
-    artist: 'Diego Velázquez',
-    year: 1656, country: 'Espanya', flag: '🇪🇸', emoji: '👑',
-    funFact: 'En aquest quadre, el pintor es va retratar a ell mateix pintant! Es veu al fons amb el pinzell.',
-    palette: ['#1A1A2E','#8B4513','#F5DEB3','#E63946','#2364AA','#4CC9F0','#654321','#C8A882'],
-    regions: [],
-    imageUrl: '/paintings/velazquez.jpg', thumbUrl: '/paintings/velazquez-thumb.jpg',
-    coords: [-3.7, 40.4],
+    museum: { name: 'Munchmuseet', city: 'Oslo', country: 'Noruega', url: 'https://www.munchmuseet.no', mapsQuery: 'Munchmuseet Oslo Norway' },
   },
   // ── Europa (Alemanya/Àustria) ──────────────────────────────────
   {
@@ -245,6 +284,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/kandinsky.jpg', thumbUrl: '/paintings/kandinsky-thumb.jpg',
     coords: [11.6, 48.1],
+    museum: { name: 'Galeria Tretyakov', city: 'Moscou', country: 'Rússia', url: 'https://www.tretyakovgallery.ru', mapsQuery: 'Tretyakov Gallery Moscow Russia' },
   },
   {
     id: 'klimt',
@@ -256,6 +296,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/klimt.jpg', thumbUrl: '/paintings/klimt-thumb.jpg',
     coords: [16.4, 48.2],
+    museum: { name: 'Belvedere', city: 'Viena', country: 'Àustria', url: 'https://www.belvedere.at', mapsQuery: 'Belvedere Museum Vienna Austria' },
   },
   // ── Àfrica ─────────────────────────────────────────────────────
   {
@@ -268,6 +309,7 @@ export const paintings: PaintingMeta[] = [
     regions: ['wall','frieze','tri1','tri2','tri3','tri4','left','right','center','door','base'],
     imageUrl: '/paintings/ndebele.jpg', thumbUrl: '/paintings/ndebele-thumb.jpg',
     coords: [28.0, -26.0],
+    museum: { name: 'Pobles Ndebele (Mpumalanga)', city: 'Mpumalanga', country: 'Sud-àfrica', mapsQuery: 'Ndebele villages Mpumalanga South Africa' },
   },
 ]
 
