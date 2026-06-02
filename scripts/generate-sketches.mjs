@@ -6,7 +6,24 @@ import { join, dirname, basename } from 'path'
 import { fileURLToPath } from 'url'
 import { Jimp } from 'jimp'
 import potraceModule from 'potrace'
+import sharp from 'sharp'
 const { trace: potraceTrace } = potraceModule
+
+// ── RGB → Lab (espai de color perceptualment uniforme — molt millor per K-Means) ──
+function rgbToLab(r, g, b) {
+  r /= 255; g /= 255; b /= 255
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92
+  let X = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047
+  let Y = (r * 0.2126729 + g * 0.7151522 + b * 0.0721750) / 1.00000
+  let Z = (r * 0.0193339 + g * 0.1191920 + b * 0.9503041) / 1.08883
+  const f = t => t > 0.008856 ? Math.pow(t, 1/3) : 7.787 * t + 16/116
+  const L = 116 * f(Y) - 16
+  const a = 500 * (f(X) - f(Y))
+  const bb = 200 * (f(Y) - f(Z))
+  return [L, a, bb]
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SRC = join(__dirname, '..', 'public', 'paintings')
@@ -16,37 +33,35 @@ await mkdir(OUT, { recursive: true })
 const MAX_DIM = 600
 const KMEANS_ITER = 12
 
-// CONFIG PER-QUADRE — adaptat al tipus de pintura:
-//   K alt (8) → retrats amb forma clara
-//   K mig (7) → escenes amb formes definides
-//   K baix (5) → abstractes / textures denses
+// CONFIG PER-QUADRE — V2 amb median filter + Lab color space
+// turdSize més gran i alphaMax més alt → corbes més suaus tipus comic
 const PAINTING_CONFIG = {
-  // Retrats / detallats — K alt, més detall
-  vermeer:   { K: 8, tol: 0.4, minSize: 40, blur: 2 },
-  cassatt:   { K: 8, tol: 0.4, minSize: 40, blur: 2 },
-  vigee:     { K: 8, tol: 0.4, minSize: 40, blur: 2 },
-  sofonisba: { K: 8, tol: 0.5, minSize: 50, blur: 2 },
-  velazquez: { K: 8, tol: 0.5, minSize: 50, blur: 2 },
-  kahlo:     { K: 8, tol: 0.4, minSize: 40, blur: 2 },  // Renoir (fitxer mal-anomenat)
-  morisot:   { K: 7, tol: 0.5, minSize: 50, blur: 2 },
-  klimt:     { K: 7, tol: 0.5, minSize: 50, blur: 2 },
-  artemisia: { K: 7, tol: 0.5, minSize: 50, blur: 2 },
-  // Escenes amb formes clares — K mig
-  hokusai:   { K: 7, tol: 0.5, minSize: 50, blur: 2 },
-  mondrian:  { K: 5, tol: 0.6, minSize: 80, blur: 2 },  // geomètric simple
-  lewitt:    { K: 6, tol: 0.5, minSize: 60, blur: 2 },  // geomètric
-  munch:     { K: 6, tol: 0.6, minSize: 60, blur: 2 },
-  homer:     { K: 6, tol: 0.6, minSize: 70, blur: 3 },
-  ndebele:   { K: 6, tol: 0.5, minSize: 60, blur: 2 },
-  // Abstractes / textura densa — K baix per simplificar
-  kandinsky: { K: 5, tol: 0.8, minSize: 100, blur: 4 },
-  matisse:   { K: 5, tol: 0.7, minSize: 80, blur: 3 },
-  vangogh:   { K: 5, tol: 0.8, minSize: 100, blur: 4 },
-  sargent:   { K: 5, tol: 0.8, minSize: 100, blur: 4 },
-  botticelli:{ K: 6, tol: 0.6, minSize: 70, blur: 3 },
-  lascaux:   { K: 5, tol: 0.7, minSize: 80, blur: 3 },
+  // Retrats detallats — K alt, més detall
+  vermeer:   { K: 8, tol: 0.6, minSize: 60, turdSize: 10, alphaMax: 1.2 },
+  cassatt:   { K: 8, tol: 0.6, minSize: 60, turdSize: 10, alphaMax: 1.2 },
+  vigee:     { K: 8, tol: 0.6, minSize: 60, turdSize: 10, alphaMax: 1.2 },
+  sofonisba: { K: 8, tol: 0.6, minSize: 60, turdSize: 12, alphaMax: 1.2 },
+  velazquez: { K: 8, tol: 0.6, minSize: 60, turdSize: 12, alphaMax: 1.2 },
+  kahlo:     { K: 8, tol: 0.6, minSize: 60, turdSize: 10, alphaMax: 1.2 },
+  morisot:   { K: 7, tol: 0.7, minSize: 70, turdSize: 12, alphaMax: 1.25 },
+  klimt:     { K: 7, tol: 0.7, minSize: 70, turdSize: 12, alphaMax: 1.25 },
+  artemisia: { K: 7, tol: 0.7, minSize: 70, turdSize: 12, alphaMax: 1.25 },
+  // Escenes amb formes clares
+  hokusai:   { K: 7, tol: 0.8, minSize: 80, turdSize: 14, alphaMax: 1.3 },
+  mondrian:  { K: 5, tol: 1.0, minSize: 120, turdSize: 18, alphaMax: 1.34 },
+  lewitt:    { K: 6, tol: 0.7, minSize: 70, turdSize: 14, alphaMax: 1.3 },
+  munch:     { K: 6, tol: 0.8, minSize: 80, turdSize: 14, alphaMax: 1.3 },
+  homer:     { K: 6, tol: 0.8, minSize: 80, turdSize: 14, alphaMax: 1.3 },
+  ndebele:   { K: 6, tol: 0.7, minSize: 70, turdSize: 14, alphaMax: 1.3 },
+  // Abstractes / densitat alta — K baix + suavitzat fort
+  kandinsky: { K: 5, tol: 1.0, minSize: 100, turdSize: 16, alphaMax: 1.33 },
+  matisse:   { K: 5, tol: 1.0, minSize: 100, turdSize: 16, alphaMax: 1.33 },
+  vangogh:   { K: 5, tol: 1.0, minSize: 100, turdSize: 16, alphaMax: 1.33 },
+  sargent:   { K: 5, tol: 1.0, minSize: 100, turdSize: 16, alphaMax: 1.33 },
+  botticelli:{ K: 6, tol: 0.9, minSize: 90, turdSize: 14, alphaMax: 1.3 },
+  lascaux:   { K: 5, tol: 1.0, minSize: 100, turdSize: 16, alphaMax: 1.33 },
 }
-const DEFAULT_CONFIG = { K: 7, tol: 0.5, minSize: 50, blur: 2 }
+const DEFAULT_CONFIG = { K: 7, tol: 0.7, minSize: 70, turdSize: 12, alphaMax: 1.25 }
 
 function kmeans(pixels, K, maxIter) {
   const N = pixels.length / 3
@@ -166,14 +181,14 @@ async function edgesToPng(edges, W, H, outPath) {
   await out.write(outPath)
 }
 
-function potraceSvg(pngBuffer, optTolerance) {
+function potraceSvg(pngBuffer, { tol, turdSize, alphaMax }) {
   return new Promise((res, rej) => {
     potraceTrace(pngBuffer, {
-      turdSize: 8,
+      turdSize,
       turnPolicy: 'minority',
-      alphaMax: 1.0,
+      alphaMax,
       optCurve: true,
-      optTolerance,
+      optTolerance: tol,
       threshold: 128,
       blackOnWhite: true,
       color: '#1A1A1A',
@@ -192,20 +207,34 @@ await mkdir(tmpDir, { recursive: true })
 for (const file of files) {
   const name = basename(file, '.jpg')
   const cfg = PAINTING_CONFIG[name] || DEFAULT_CONFIG
-  process.stdout.write(`${name} (K=${cfg.K} tol=${cfg.tol})... `)
+  process.stdout.write(`${name} (K=${cfg.K})... `)
   try {
-    const img = await Jimp.read(join(SRC, file))
-    const ratio = MAX_DIM / Math.max(img.width, img.height)
-    if (ratio < 1) img.resize({ w: Math.round(img.width * ratio), h: Math.round(img.height * ratio) })
-    const W = img.width, H = img.height
-    const blurred = img.clone().blur(cfg.blur)
-    const d = new Uint8Array(blurred.bitmap.data.buffer, blurred.bitmap.data.byteOffset, blurred.bitmap.data.byteLength)
+    // ── Preprocessing amb sharp: median filter (preserva vores!) ──
+    const imgBuf = await readFile(join(SRC, file))
+    const meta = await sharp(imgBuf).metadata()
+    const ratio = MAX_DIM / Math.max(meta.width, meta.height)
+    const W = ratio < 1 ? Math.round(meta.width * ratio) : meta.width
+    const H = ratio < 1 ? Math.round(meta.height * ratio) : meta.height
 
+    // Pipeline: resize → median filter (5x5) → raw bytes
+    const { data, info } = await sharp(imgBuf)
+      .resize(W, H)
+      .median(5)
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    const channels = info.channels  // 3 (RGB) o 4 (RGBA)
+
+    // ── K-Means en espai Lab (perceptualment uniform) ──
     const pixels = new Float32Array(W * H * 3)
     for (let i = 0; i < W * H; i++) {
-      pixels[i*3] = d[i*4]; pixels[i*3+1] = d[i*4+1]; pixels[i*3+2] = d[i*4+2]
+      const r = data[i * channels], g = data[i * channels + 1], b = data[i * channels + 2]
+      const [L, a, bb] = rgbToLab(r, g, b)
+      pixels[i*3] = L; pixels[i*3+1] = a; pixels[i*3+2] = bb
     }
     const labels = kmeans(pixels, cfg.K, KMEANS_ITER)
+
+    // ── Traça vores + neteja + dilate ──
     let edges = traceBoundaries(labels, W, H)
     edges = removeSmall(edges, W, H, cfg.minSize)
     edges = dilate(edges, W, H)
@@ -213,7 +242,7 @@ for (const file of files) {
     const bmpPath = join(tmpDir, `${name}.png`)
     await edgesToPng(edges, W, H, bmpPath)
     const pngBuf = await readFile(bmpPath)
-    const svg = await potraceSvg(pngBuf, cfg.tol)
+    const svg = await potraceSvg(pngBuf, cfg)
 
     const cleaned = svg
       .replace(/<svg([^>]*) width="[^"]*"/, '<svg$1')
