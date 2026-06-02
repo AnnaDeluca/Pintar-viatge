@@ -283,7 +283,11 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 h-full">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
-              style={{ maxHeight: '100%', maxWidth: '100%', width: '100%', aspectRatio: '280/300' }}>
+              style={{
+                // Sense width:100% — així maxWidth + maxHeight + aspectRatio
+                // mantenen sempre la forma original de la carbassa
+                maxHeight: '100%', maxWidth: '100%', aspectRatio: '280/300',
+              }}>
               <Kusama fills={{}} onRegionClick={() => {}} dots={dots} onSvgClick={handleSvgClick} />
             </div>
           ) : painting.imageUrl && !loadError ? (

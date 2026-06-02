@@ -451,7 +451,15 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
 
     return (
       <div className={`relative bg-white ${className}`}
-        style={{ aspectRatio: `${dims.w}/${dims.h}`, width: '100%', maxHeight: '100%', ...style }}>
+        style={{
+          // NO width: 100% — així maxWidth + maxHeight + aspectRatio col·laboren
+          // i el canvas s'ajusta al MENOR dels dos límits, sempre preservant
+          // les proporcions originals del quadre.
+          aspectRatio: `${dims.w}/${dims.h}`,
+          maxWidth: '100%',
+          maxHeight: '100%',
+          ...style,
+        }}>
         <canvas ref={paintRef}
           className="absolute inset-0 w-full h-full"
           style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}
