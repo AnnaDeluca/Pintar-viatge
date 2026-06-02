@@ -452,11 +452,13 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
     return (
       <div className={`relative bg-white ${className}`}
         style={{
-          // NO width: 100% — així maxWidth + maxHeight + aspectRatio col·laboren
-          // i el canvas s'ajusta al MENOR dels dos límits, sempre preservant
-          // les proporcions originals del quadre.
+          // width:100% dona la dimensió de partida al flex item.
+          // aspectRatio calcula l'alçada proporcionalment.
+          // maxHeight:100% limita si l'alçada calculada excedeix el pare —
+          // i CSS propaga el límit d'alçada de tornada a l'amplada via
+          // aspectRatio, de manera que les proporcions es mantenen sempre.
+          width: '100%',
           aspectRatio: `${dims.w}/${dims.h}`,
-          maxWidth: '100%',
           maxHeight: '100%',
           ...style,
         }}>
