@@ -277,7 +277,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
       {/* Canvas + referència — paddingBottom reactiu segons l'estat de la safata */}
       <div className="flex-1 flex gap-2 px-2 pt-2 min-h-0 items-center"
         style={{
-          paddingBottom: trayOpen ? 150 : 8,
+          paddingBottom: isDots ? 70 : (trayOpen ? 150 : 80),
           transition: 'padding-bottom .25s cubic-bezier(.22,1,.36,1)',
         }}>
         <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 h-full">
@@ -353,8 +353,9 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         className="fixed flex items-center gap-1 active:scale-95 transition-transform"
         style={{
           left: 14,
-          // Si tray oberta: per sobre de la tray (~140px). Si tancada: prop del fons.
-          bottom: trayOpen ? 'calc(env(safe-area-inset-bottom) + 150px)' : 'calc(env(safe-area-inset-bottom) + 14px)',
+          // Per Kusama no hi ha tray, sempre a baix.
+          // Per la resta: puja amunt quan s'obre la safata
+          bottom: (!isDots && trayOpen) ? 'calc(env(safe-area-inset-bottom) + 150px)' : 'calc(env(safe-area-inset-bottom) + 14px)',
           zIndex: 41,
           padding: '8px 16px', borderRadius: 999, border: 'none',
           background: accent, color: 'white',
