@@ -39,7 +39,7 @@ function PaintDab({ color, selected, onSelect }: PaintDabProps) {
       aria-label={color}
       className="shrink-0 rounded-full"
       style={{
-        width: 46, height: 46, border: 'none', padding: 0, cursor: 'pointer',
+        width: 40, height: 40, border: 'none', padding: 0, cursor: 'pointer',
         background: dabBg(color),
         transition: 'transform .13s cubic-bezier(.22,1,.36,1)',
         transform: selected ? 'translateY(-6px) scale(1.14)' : 'none',
@@ -58,7 +58,7 @@ function EraserDab({ selected, onSelect }: { selected: boolean; onSelect: () => 
       aria-label="Goma d'esborrar"
       className="shrink-0 rounded-full flex items-center justify-center"
       style={{
-        width: 46, height: 46, border: 'none', padding: 0, cursor: 'pointer',
+        width: 40, height: 40, border: 'none', padding: 0, cursor: 'pointer',
         background: 'linear-gradient(135deg,#ffffff 0%,#ece9e0 100%)',
         transition: 'transform .13s cubic-bezier(.22,1,.36,1)',
         transform: selected ? 'translateY(-6px) scale(1.14)' : 'none',
@@ -118,7 +118,7 @@ function StudioBtn({ children, onClick, ariaLabel }: { children: React.ReactNode
       aria-label={ariaLabel}
       className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-transform"
       style={{
-        width: 42, height: 42, borderRadius: 14, fontSize: 18,
+        width: 36, height: 36, borderRadius: 12, fontSize: 16,
         border: '1px solid rgba(255,255,255,0.14)',
         background: 'rgba(255,255,255,0.09)',
         backdropFilter: 'blur(6px)',
@@ -217,11 +217,12 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
       style={{ background: 'radial-gradient(ellipse at 50% 32%, #322E29 0%, #211E1A 62%, #18150F 100%)' }}>
 
       {/* Top bar */}
-      <header className="flex items-center gap-2.5 px-3.5 pt-3 pb-2 shrink-0">
+      <header className="flex items-center gap-2 px-2.5 pt-1.5 pb-1 shrink-0"
+        style={{ paddingTop: 'max(6px, env(safe-area-inset-top))' }}>
         <Link href="/" aria-label="Tornar a l'atlas"
           className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-transform"
           style={{
-            width: 42, height: 42, borderRadius: 14, fontSize: 18,
+            width: 36, height: 36, borderRadius: 12, fontSize: 17,
             border: '1px solid rgba(255,255,255,0.14)',
             background: 'rgba(255,255,255,0.09)',
             backdropFilter: 'blur(6px)',
@@ -230,11 +231,11 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-white truncate"
-            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, lineHeight: 1.05 }}>
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, lineHeight: 1.05 }}>
             {painting.emoji} {painting.title}
           </h1>
-          <p className="truncate" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 1 }}>
-            {painting.artist} · {painting.flag} {painting.year}
+          <p className="truncate" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 0 }}>
+            {painting.artist}
           </p>
         </div>
         <StudioBtn onClick={() => setShowFact(v => !v)} ariaLabel="Curiositat">💡</StudioBtn>
@@ -244,7 +245,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           aria-label="Desfer"
           className="shrink-0 flex items-center justify-center text-white transition-all active:scale-95"
           style={{
-            width: 42, height: 42, borderRadius: 14, fontSize: 18,
+            width: 36, height: 36, borderRadius: 12, fontSize: 16,
             border: '1px solid rgba(255,255,255,0.14)',
             background: 'rgba(255,255,255,0.09)',
             backdropFilter: 'blur(6px)',
@@ -273,7 +274,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
       )}
 
       {/* Canvas + referència */}
-      <div className="flex-1 flex gap-3 px-4 pt-3.5 pb-2 min-h-0 items-center">
+      <div className="flex-1 flex gap-2 px-2 pt-2 pb-1 min-h-0 items-center">
         <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 h-full">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
@@ -316,8 +317,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
 
         {/* Model — referència original (petit; tap per veure'l gran) */}
         {painting.imageUrl && !isDots && (
-          <div className="flex flex-col items-center gap-1.5 shrink-0"
-            style={{ width: 'clamp(64px, 11vw, 110px)' }}>
+          <div className="flex flex-col items-center gap-1 shrink-0"
+            style={{ width: 'clamp(52px, 9vw, 90px)' }}>
             <span style={{
               fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: 'rgba(255,255,255,0.55)', fontWeight: 700, fontFamily: 'var(--font-body)',
@@ -342,56 +343,32 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         )}
       </div>
 
-      {/* He acabat */}
-      <div className="flex justify-center pb-1.5 shrink-0">
+      {/* He acabat — compacte */}
+      <div className="flex justify-center pb-0.5 shrink-0">
         <button onClick={handleDone}
-          className="flex items-center gap-1.5 active:scale-95 transition-transform"
+          className="flex items-center gap-1 active:scale-95 transition-transform"
           style={{
-            padding: '9px 22px', borderRadius: 999, border: 'none',
+            padding: '6px 16px', borderRadius: 999, border: 'none',
             background: accent, color: 'white',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14.5,
-            boxShadow: `0 6px 18px ${accent}66`,
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+            boxShadow: `0 4px 12px ${accent}66`,
           }}>
-          He acabat <span style={{ fontSize: 16 }}>✓</span>
+          He acabat <span style={{ fontSize: 14 }}>✓</span>
         </button>
       </div>
 
-      {/* ── La safata ceràmica ── */}
+      {/* ── La safata ceràmica (compacta per a mòbil) ── */}
       {!isDots && (
         <div className="shrink-0 pb-safe relative"
           style={{
-            paddingTop: 13, paddingBottom: 22,
+            paddingTop: 6, paddingBottom: 8,
             background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',
             borderTop: '1px solid rgba(255,255,255,0.6)',
-            boxShadow: '0 -12px 34px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.8)',
+            boxShadow: '0 -8px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.8)',
           }}>
 
-          {/* Header safata */}
-          <div className="flex items-center justify-between px-5 pb-2.5">
-            <span style={{
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#8A744F',
-            }}>
-              Tria un color
-            </span>
-            <div className="flex items-center gap-2">
-              <span style={{
-                fontSize: 11.5, color: 'rgba(74,58,32,0.62)', fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-body)',
-              }}>
-                {isErasing ? 'Goma' : 'El teu color'}
-              </span>
-              <span style={{
-                width: 30, height: 30, borderRadius: '50%', display: 'block',
-                background: dabBg(selectedColor),
-                boxShadow: '0 3px 6px rgba(60,40,20,0.35), inset -1px -2px 3px rgba(0,0,0,0.18), inset 1px 2px 3px rgba(255,255,255,0.6)',
-                outline: isErasing ? '1px solid rgba(74,58,32,0.22)' : 'none',
-                outlineOffset: -1,
-              }} />
-            </div>
-          </div>
-
-          {/* Eines: fill / brush (només si no és dots) */}
-          <div className="flex items-center justify-center gap-2 px-4 pb-2.5 flex-wrap">
+          {/* Capçalera + eines fusionades en una sola fila per estalviar alçada */}
+          <div className="flex items-center justify-center gap-1.5 px-3 pb-1.5 flex-wrap">
             <div className="flex rounded-full overflow-hidden"
               style={{ background: 'rgba(74,58,32,0.08)', border: '1px solid rgba(74,58,32,0.12)' }}>
               <button onClick={() => setTool('fill')}
@@ -478,12 +455,12 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             )}
           </div>
 
-          {/* Dabs — tots visibles, dues files */}
-          <div className="flex flex-wrap justify-center items-center"
-            style={{ gap: '13px 15px', padding: '4px 20px 0' }}>
+          {/* Dabs — scroll horitzontal per estalviar alçada */}
+          <div className="flex items-center overflow-x-auto"
+            style={{ gap: 8, padding: '2px 12px 0', scrollbarWidth: 'none' }}>
             <EraserDab selected={isErasing} onSelect={() => setSelectedColor('#FFFFFF')} />
             <RainbowDab value={selectedColor} onChange={setSelectedColor} />
-            <span style={{ width: 1, height: 34, background: 'rgba(74,58,32,0.16)', alignSelf: 'center' }} />
+            <span style={{ width: 1, height: 30, background: 'rgba(74,58,32,0.16)', alignSelf: 'center', flexShrink: 0 }} />
             {artColors.map(c => (
               <PaintDab key={c} color={c}
                 selected={!isErasing && selectedColor.toUpperCase() === c}
