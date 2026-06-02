@@ -139,6 +139,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
+  const [trayOpen, setTrayOpen] = useState(true)  // safata oberta inicialment
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
   const [showFact, setShowFact] = useState(false)
@@ -273,8 +274,12 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         </div>
       )}
 
-      {/* Canvas + referència */}
-      <div className="flex-1 flex gap-2 px-2 pt-2 pb-1 min-h-0 items-center">
+      {/* Canvas + referència — paddingBottom reactiu segons l'estat de la safata */}
+      <div className="flex-1 flex gap-2 px-2 pt-2 min-h-0 items-center"
+        style={{
+          paddingBottom: trayOpen ? 150 : 8,
+          transition: 'padding-bottom .25s cubic-bezier(.22,1,.36,1)',
+        }}>
         <div className="flex-1 flex items-center justify-center min-w-0 min-h-0 h-full">
           {isDots ? (
             <div className="rounded-3xl overflow-hidden shadow-2xl"
@@ -343,29 +348,72 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         )}
       </div>
 
-      {/* He acabat — compacte */}
-      <div className="flex justify-center pb-0.5 shrink-0">
-        <button onClick={handleDone}
-          className="flex items-center gap-1 active:scale-95 transition-transform"
-          style={{
-            padding: '6px 16px', borderRadius: 999, border: 'none',
-            background: accent, color: 'white',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
-            boxShadow: `0 4px 12px ${accent}66`,
-          }}>
-          He acabat <span style={{ fontSize: 14 }}>✓</span>
-        </button>
-      </div>
+      {/* He acabat — FLOTANT a esquerra bottom. Es mou amunt quan s'obre la safata. */}
+      <button onClick={handleDone}
+        className="fixed flex items-center gap-1 active:scale-95 transition-transform"
+        style={{
+          left: 14,
+          // Si tray oberta: per sobre de la tray (~140px). Si tancada: prop del fons.
+          bottom: trayOpen ? 'calc(env(safe-area-inset-bottom) + 150px)' : 'calc(env(safe-area-inset-bottom) + 14px)',
+          zIndex: 41,
+          padding: '8px 16px', borderRadius: 999, border: 'none',
+          background: accent, color: 'white',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+          boxShadow: `0 4px 14px ${accent}66`,
+          display: 'flex', alignItems: 'center',
+          transition: 'bottom .25s cubic-bezier(.22,1,.36,1)',
+        }}>
+        He acabat <span style={{ fontSize: 14 }}>✓</span>
+      </button>
 
-      {/* ── La safata ceràmica (compacta per a mòbil) ── */}
-      {!isDots && (
-        <div className="shrink-0 pb-safe relative"
+      {/* ── La safata ceràmica FLOTANT — desplegable per donar màxim espai al canvas ── */}
+      {!isDots && !trayOpen && (
+        <button onClick={() => setTrayOpen(true)}
+          aria-label="Obrir paleta"
+          className="fixed flex items-center justify-center active:scale-95 transition-transform"
           style={{
-            paddingTop: 6, paddingBottom: 8,
+            bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
+            right: 14, zIndex: 40,
+            width: 60, height: 60, borderRadius: '50%', border: 'none',
+            padding: 0, cursor: 'pointer',
             background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',
-            borderTop: '1px solid rgba(255,255,255,0.6)',
-            boxShadow: '0 -8px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.8)',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.8)',
           }}>
+          <span style={{
+            width: 38, height: 38, borderRadius: '50%', display: 'block',
+            background: dabBg(selectedColor),
+            boxShadow: '0 3px 6px rgba(60,40,20,0.4), inset -2px -3px 5px rgba(0,0,0,0.22), inset 2px 3px 5px rgba(255,255,255,0.5)',
+          }} />
+        </button>
+      )}
+      {!isDots && trayOpen && (
+        <div className="fixed left-0 right-0 pb-safe"
+          style={{
+            bottom: 0, zIndex: 40,
+            paddingTop: 4, paddingBottom: 8,
+            background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',
+            borderTopLeftRadius: 22, borderTopRightRadius: 22,
+            borderTop: '1px solid rgba(255,255,255,0.6)',
+            boxShadow: '0 -8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.8)',
+            animation: 'sheetUp .25s cubic-bezier(.22,1,.36,1)',
+          }}>
+          {/* Botó "tancar safata" — fletxa avall + drag handle visual */}
+          <button onClick={() => setTrayOpen(false)}
+            aria-label="Tancar paleta"
+            className="absolute active:scale-95 transition-transform"
+            style={{
+              top: 6, right: 12, zIndex: 1,
+              width: 28, height: 28, borderRadius: '50%',
+              border: 'none', cursor: 'pointer',
+              background: 'rgba(74,58,32,0.12)',
+              color: '#5C4424', fontSize: 14, fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+            ↓
+          </button>
+          <div className="flex justify-center" style={{ paddingBottom: 4 }}>
+            <div style={{ width: 38, height: 4, borderRadius: 4, background: 'rgba(74,58,32,0.2)' }} />
+          </div>
 
           {/* Capçalera + eines fusionades en una sola fila per estalviar alçada */}
           <div className="flex items-center justify-center gap-1.5 px-3 pb-1.5 flex-wrap">
