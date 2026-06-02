@@ -14,9 +14,39 @@ const OUT = join(__dirname, '..', 'public', 'sketches')
 await mkdir(OUT, { recursive: true })
 
 const MAX_DIM = 600
-const K = 8
 const KMEANS_ITER = 12
-const MIN_COMP_SIZE = 40
+
+// CONFIG PER-QUADRE — adaptat al tipus de pintura:
+//   K alt (8) → retrats amb forma clara
+//   K mig (7) → escenes amb formes definides
+//   K baix (5) → abstractes / textures denses
+const PAINTING_CONFIG = {
+  // Retrats / detallats — K alt, més detall
+  vermeer:   { K: 8, tol: 0.4, minSize: 40, blur: 2 },
+  cassatt:   { K: 8, tol: 0.4, minSize: 40, blur: 2 },
+  vigee:     { K: 8, tol: 0.4, minSize: 40, blur: 2 },
+  sofonisba: { K: 8, tol: 0.5, minSize: 50, blur: 2 },
+  velazquez: { K: 8, tol: 0.5, minSize: 50, blur: 2 },
+  kahlo:     { K: 8, tol: 0.4, minSize: 40, blur: 2 },  // Renoir (fitxer mal-anomenat)
+  morisot:   { K: 7, tol: 0.5, minSize: 50, blur: 2 },
+  klimt:     { K: 7, tol: 0.5, minSize: 50, blur: 2 },
+  artemisia: { K: 7, tol: 0.5, minSize: 50, blur: 2 },
+  // Escenes amb formes clares — K mig
+  hokusai:   { K: 7, tol: 0.5, minSize: 50, blur: 2 },
+  mondrian:  { K: 5, tol: 0.6, minSize: 80, blur: 2 },  // geomètric simple
+  lewitt:    { K: 6, tol: 0.5, minSize: 60, blur: 2 },  // geomètric
+  munch:     { K: 6, tol: 0.6, minSize: 60, blur: 2 },
+  homer:     { K: 6, tol: 0.6, minSize: 70, blur: 3 },
+  ndebele:   { K: 6, tol: 0.5, minSize: 60, blur: 2 },
+  // Abstractes / textura densa — K baix per simplificar
+  kandinsky: { K: 5, tol: 0.8, minSize: 100, blur: 4 },
+  matisse:   { K: 5, tol: 0.7, minSize: 80, blur: 3 },
+  vangogh:   { K: 5, tol: 0.8, minSize: 100, blur: 4 },
+  sargent:   { K: 5, tol: 0.8, minSize: 100, blur: 4 },
+  botticelli:{ K: 6, tol: 0.6, minSize: 70, blur: 3 },
+  lascaux:   { K: 5, tol: 0.7, minSize: 80, blur: 3 },
+}
+const DEFAULT_CONFIG = { K: 7, tol: 0.5, minSize: 50, blur: 2 }
 
 function kmeans(pixels, K, maxIter) {
   const N = pixels.length / 3
@@ -136,14 +166,14 @@ async function edgesToPng(edges, W, H, outPath) {
   await out.write(outPath)
 }
 
-function potraceSvg(pngBuffer) {
+function potraceSvg(pngBuffer, optTolerance) {
   return new Promise((res, rej) => {
     potraceTrace(pngBuffer, {
       turdSize: 8,
       turnPolicy: 'minority',
       alphaMax: 1.0,
       optCurve: true,
-      optTolerance: 0.4,
+      optTolerance,
       threshold: 128,
       blackOnWhite: true,
       color: '#1A1A1A',
@@ -161,30 +191,30 @@ await mkdir(tmpDir, { recursive: true })
 
 for (const file of files) {
   const name = basename(file, '.jpg')
-  process.stdout.write(`${name}... `)
+  const cfg = PAINTING_CONFIG[name] || DEFAULT_CONFIG
+  process.stdout.write(`${name} (K=${cfg.K} tol=${cfg.tol})... `)
   try {
     const img = await Jimp.read(join(SRC, file))
     const ratio = MAX_DIM / Math.max(img.width, img.height)
     if (ratio < 1) img.resize({ w: Math.round(img.width * ratio), h: Math.round(img.height * ratio) })
     const W = img.width, H = img.height
-    const blurred = img.clone().blur(2)
+    const blurred = img.clone().blur(cfg.blur)
     const d = new Uint8Array(blurred.bitmap.data.buffer, blurred.bitmap.data.byteOffset, blurred.bitmap.data.byteLength)
 
     const pixels = new Float32Array(W * H * 3)
     for (let i = 0; i < W * H; i++) {
       pixels[i*3] = d[i*4]; pixels[i*3+1] = d[i*4+1]; pixels[i*3+2] = d[i*4+2]
     }
-    const labels = kmeans(pixels, K, KMEANS_ITER)
+    const labels = kmeans(pixels, cfg.K, KMEANS_ITER)
     let edges = traceBoundaries(labels, W, H)
-    edges = removeSmall(edges, W, H, MIN_COMP_SIZE)
+    edges = removeSmall(edges, W, H, cfg.minSize)
     edges = dilate(edges, W, H)
 
     const bmpPath = join(tmpDir, `${name}.png`)
     await edgesToPng(edges, W, H, bmpPath)
     const pngBuf = await readFile(bmpPath)
-    const svg = await potraceSvg(pngBuf)
+    const svg = await potraceSvg(pngBuf, cfg.tol)
 
-    // L'SVG de potrace té width/height — el deixem responsive
     const cleaned = svg
       .replace(/<svg([^>]*) width="[^"]*"/, '<svg$1')
       .replace(/(<svg[^>]*) height="[^"]*"/, '$1')
