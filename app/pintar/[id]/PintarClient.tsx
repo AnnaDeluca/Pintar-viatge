@@ -217,8 +217,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     <div className="flex flex-col h-dvh overflow-hidden relative"
       style={{ background: 'radial-gradient(ellipse at 50% 32%, #322E29 0%, #211E1A 62%, #18150F 100%)' }}>
 
-      {/* Top bar */}
-      <header className="flex items-center gap-2 px-2.5 pt-1.5 pb-1 shrink-0"
+      {/* Top bar — mes ample al desktop */}
+      <header className="flex items-center gap-2 px-2.5 md:px-4 pt-1.5 pb-1 shrink-0 w-full max-w-6xl mx-auto"
         style={{ paddingTop: 'max(6px, env(safe-area-inset-top))' }}>
         <Link href="/" aria-label="Tornar a l'atlas"
           className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-transform"
@@ -274,8 +274,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         </div>
       )}
 
-      {/* Canvas + referència — paddingBottom reactiu segons l'estat de la safata */}
-      <div className="flex-1 flex gap-2 px-2 pt-2 min-h-0 items-center"
+      {/* Canvas + referència — centrat al desktop amb max-width */}
+      <div className="flex-1 flex gap-2 px-2 md:px-6 pt-2 min-h-0 items-center w-full max-w-6xl mx-auto"
         style={{
           paddingBottom: isDots ? 70 : (trayOpen ? 150 : 80),
           transition: 'padding-bottom .25s cubic-bezier(.22,1,.36,1)',
@@ -352,11 +352,12 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         )}
       </div>
 
-      {/* He acabat — FLOTANT a esquerra bottom. Es mou amunt quan s'obre la safata. */}
+      {/* He acabat — FLOTANT a esquerra bottom. En pantalles amples es queda
+          a prop de la zona del canvas (no a l'extrem esquerre del navegador) */}
       <button onClick={handleDone}
         className="fixed flex items-center gap-1 active:scale-95 transition-transform"
         style={{
-          left: 14,
+          left: 'max(14px, calc((100vw - 1152px) / 2 + 14px))',
           // Per Kusama no hi ha tray, sempre a baix.
           // Per la resta: puja amunt quan s'obre la safata
           bottom: (!isDots && trayOpen) ? 'calc(env(safe-area-inset-bottom) + 150px)' : 'calc(env(safe-area-inset-bottom) + 14px)',
@@ -378,7 +379,9 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           className="fixed flex items-center justify-center active:scale-95 transition-transform"
           style={{
             bottom: 'calc(env(safe-area-inset-bottom) + 14px)',
-            right: 14, zIndex: 40,
+            // En pantalles molt amples queda a prop del canvas (no del navegador)
+            right: 'max(14px, calc((100vw - 1152px) / 2 + 14px))',
+            zIndex: 40,
             width: 60, height: 60, borderRadius: '50%', border: 'none',
             padding: 0, cursor: 'pointer',
             background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',
@@ -392,8 +395,13 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         </button>
       )}
       {!isDots && trayOpen && (
-        <div className="fixed left-0 right-0 pb-safe"
+        <div className="fixed pb-safe"
           style={{
+            // Centrada amb max-width al desktop (no s'estira a tota la pantalla)
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 720,  // amplada agradable al desktop
             bottom: 0, zIndex: 40,
             paddingTop: 4, paddingBottom: 8,
             background: 'linear-gradient(180deg,#F5EAD4 0%, #E7D4B2 100%)',

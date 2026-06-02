@@ -11,8 +11,9 @@ export default function GalleryPage() {
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
 
-      {/* Header */}
-      <header className="shrink-0 relative" style={{ paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
+      {/* Header — centrat al desktop amb amplada màxima */}
+      <header className="shrink-0 relative w-full max-w-5xl mx-auto"
+        style={{ paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
         {/* Botó Les meves obres */}
         <Link href="/les-meves-obres"
           className="absolute flex items-center gap-1.5 active:scale-95 transition-transform"
@@ -38,9 +39,9 @@ export default function GalleryPage() {
             Un viatge per l&apos;art del món
           </span>
         </div>
-        <h1 style={{
+        <h1 className="text-4xl md:text-5xl lg:text-6xl" style={{
           margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800,
-          fontSize: 40, lineHeight: 0.98, letterSpacing: '-0.01em', color: 'var(--ink)',
+          lineHeight: 0.98, letterSpacing: '-0.01em', color: 'var(--ink)',
         }}>
           Pintem <span style={{ color: ACCENT }}>junts</span>
         </h1>
@@ -51,8 +52,8 @@ export default function GalleryPage() {
         </p>
       </header>
 
-      {/* Mapa centrat verticalment */}
-      <div className="flex-1 flex flex-col justify-center min-h-0"
+      {/* Mapa centrat verticalment, amplada limitada al desktop */}
+      <div className="flex-1 flex flex-col justify-center min-h-0 w-full max-w-5xl mx-auto"
         style={{ padding: '14px 18px 0' }}>
         <WorldMap />
       </div>

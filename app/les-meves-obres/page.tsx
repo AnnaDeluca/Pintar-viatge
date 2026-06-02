@@ -34,8 +34,8 @@ export default function MyArtworksPage() {
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
 
-      {/* Top bar */}
-      <header className="flex items-center gap-3 shrink-0"
+      {/* Top bar — centrat al desktop */}
+      <header className="flex items-center gap-3 shrink-0 w-full max-w-6xl mx-auto"
         style={{ padding: '40px 18px 12px' }}>
         <Link href="/"
           className="flex items-center justify-center active:scale-90 transition-transform shrink-0"
@@ -89,7 +89,7 @@ export default function MyArtworksPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-w-6xl mx-auto">
             {artworks.map(a => (
               <button key={a.id} onClick={() => setActive(a)}
                 className="text-left active:scale-95 transition-transform"
