@@ -284,6 +284,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             <ColoringCanvas
               ref={canvasRef}
               imageUrl={painting.imageUrl}
+              sketchUrl={`/sketches/${painting.id}.svg`}
               selectedColor={selectedColor}
               tool={tool}
               brushSize={brushSize}

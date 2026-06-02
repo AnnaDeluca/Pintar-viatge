@@ -124,6 +124,9 @@ export type BrushType = 'round' | 'marker' | 'crayon' | 'pencil'
 
 interface Props {
   imageUrl: string
+  /** SVG pre-generat amb els contorns (a /public/sketches/). Si es present
+   *  s'usa en lloc de l'algoritme de detecció a runtime. */
+  sketchUrl?: string
   selectedColor: string
   tool?: Tool
   brushSize?: number
@@ -135,7 +138,7 @@ interface Props {
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, className = '', style }, ref) {
+  function ColoringCanvas({ imageUrl, sketchUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
@@ -235,47 +238,92 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         const W = Math.round(nw * scale)
         const H = Math.round(nh * scale)
 
-        // Set canvas dimensions (clears canvas content)
         paint.width = W; paint.height = H
         edge.width  = W; edge.height  = H
 
-        try {
-          // Canvas per la màscara de flood fill (imatge neta sense blur)
-          const maskCanvas = document.createElement('canvas')
-          maskCanvas.width = W; maskCanvas.height = H
-          const mc = maskCanvas.getContext('2d')!
-          mc.drawImage(img, 0, 0, W, H)
-          const maskSrc = mc.getImageData(0, 0, W, H)
-          maskData.current = new Uint8ClampedArray(maskSrc.data)
+        // Si tenim un SVG pre-generat, l'usem (línies vectorials suaus + Potrace).
+        // Si no, fem el processament en runtime amb posterize (fallback).
+        const useSketch = !!sketchUrl
 
-          // Blur fort (8px) per esborrar TOTA la textura interna del quadre
-          // (pinzellades, gradients, soroll) i deixar només les formes grans.
-          const blurCanvas = document.createElement('canvas')
-          blurCanvas.width = W; blurCanvas.height = H
-          const bc = blurCanvas.getContext('2d')!
-          bc.filter = 'blur(8px)'
-          bc.drawImage(img, 0, 0, W, H)
-          bc.filter = 'none'
-          const blurSrc = bc.getImageData(0, 0, W, H)
+        const finalize = () => {
+          if (alive) {
+            setDims({ w: W, h: H })
+            setReady(true)
+          }
+        }
 
+        const fillWhite = () => {
           const pc = paint.getContext('2d')!
           pc.fillStyle = '#fff'
           pc.fillRect(0, 0, W, H)
-
-          // POSTERIZE: N=3 nivells + neteja components < 40px
-          // → línies netes i simples, com un llibre per pintar de veritat
-          const edges = posterizeEdges(blurSrc, 3, 40)
-
-          const ec = edge.getContext('2d')!
-          ec.putImageData(edges, 0, 0)
-        } catch (err) {
-          const pc = paint.getContext('2d')
-          if (pc) pc.drawImage(img, 0, 0, W, H)
         }
 
-        if (alive) {
-          setDims({ w: W, h: H })
-          setReady(true)
+        if (useSketch) {
+          // Carrega l'SVG i el renderitza al canvas edge
+          const sketchImg = new Image()
+          sketchImg.crossOrigin = 'anonymous'
+          sketchImg.onload = () => {
+            if (!alive) return
+            try {
+              fillWhite()
+              const ec = edge.getContext('2d')!
+              ec.clearRect(0, 0, W, H)
+              ec.drawImage(sketchImg, 0, 0, W, H)
+              // El mateix canvas edge serveix com a màscara per al flood fill:
+              // píxels foscos = línies (parets), píxels clars = espai pintable
+              const maskSrc = ec.getImageData(0, 0, W, H)
+              maskData.current = new Uint8ClampedArray(maskSrc.data)
+            } catch {
+              fillWhite()
+            }
+            finalize()
+          }
+          sketchImg.onerror = () => {
+            // Si l'SVG falla, fem fallback al posterize de la imatge original
+            try {
+              const maskCanvas = document.createElement('canvas')
+              maskCanvas.width = W; maskCanvas.height = H
+              const mc = maskCanvas.getContext('2d')!
+              mc.drawImage(img, 0, 0, W, H)
+              maskData.current = new Uint8ClampedArray(mc.getImageData(0, 0, W, H).data)
+
+              const blurCanvas = document.createElement('canvas')
+              blurCanvas.width = W; blurCanvas.height = H
+              const bc = blurCanvas.getContext('2d')!
+              bc.filter = 'blur(8px)'
+              bc.drawImage(img, 0, 0, W, H)
+              bc.filter = 'none'
+              fillWhite()
+              const edges = posterizeEdges(bc.getImageData(0, 0, W, H), 3, 40)
+              edge.getContext('2d')!.putImageData(edges, 0, 0)
+            } catch {
+              fillWhite()
+            }
+            finalize()
+          }
+          sketchImg.src = sketchUrl
+        } else {
+          // Camí antic: posterize a runtime
+          try {
+            const maskCanvas = document.createElement('canvas')
+            maskCanvas.width = W; maskCanvas.height = H
+            const mc = maskCanvas.getContext('2d')!
+            mc.drawImage(img, 0, 0, W, H)
+            maskData.current = new Uint8ClampedArray(mc.getImageData(0, 0, W, H).data)
+
+            const blurCanvas = document.createElement('canvas')
+            blurCanvas.width = W; blurCanvas.height = H
+            const bc = blurCanvas.getContext('2d')!
+            bc.filter = 'blur(8px)'
+            bc.drawImage(img, 0, 0, W, H)
+            bc.filter = 'none'
+            fillWhite()
+            const edges = posterizeEdges(bc.getImageData(0, 0, W, H), 3, 40)
+            edge.getContext('2d')!.putImageData(edges, 0, 0)
+          } catch {
+            fillWhite()
+          }
+          finalize()
         }
       }
 
@@ -288,7 +336,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         img.onload = null
         img.onerror = null
       }
-    }, [imageUrl])  // only re-run when imageUrl changes
+    }, [imageUrl, sketchUrl])  // re-run when imageUrl or sketchUrl changes
 
     const lastPos = useRef<{ x: number; y: number } | null>(null)
 
