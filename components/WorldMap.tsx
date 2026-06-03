@@ -238,7 +238,7 @@ function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
 }
 
 const MIN_ZOOM = 1
-const MAX_ZOOM = 6
+const MAX_ZOOM = 10   // permet fer molt més zoom manualment
 const CLUSTER_THRESHOLD = 2.5  // zoom > X → mostra pins individuals
 
 export default function WorldMap() {
@@ -278,32 +278,24 @@ export default function WorldMap() {
   }
   const onPointerUp = () => { dragRef.current = null }
 
-  // Zoom-to-fit: calcula zoom i pan per mostrar tots els pins d'una regió
+  // Zoom predefinit per a cada cluster.
+  // cx/cy: fracció [0,1] de l'SVG on és el centre geogràfic de la zona.
+  // z: nivell de zoom que mostra tots els pins individuals.
+  const REGION_VIEW: Record<string, { z: number; cx: number; cy: number }> = {
+    europa:    { z: 3.0, cx: 0.54, cy: 0.38 },
+    america:   { z: 4.0, cx: 0.20, cy: 0.38 },
+    japo:      { z: 6.0, cx: 0.84, cy: 0.37 },
+    sudafrica: { z: 5.5, cx: 0.58, cy: 0.74 },
+  }
+
   const zoomToRegion = (regionId: string) => {
-    if (!geo) return
-    const r = REGIONS.find(reg => reg.id === regionId)
-    if (!r) return
-    const pts = r.paintingIds.map(id => geo.paintingPins[id]).filter(Boolean) as [number, number][]
-    if (pts.length === 0) return
-
-    const xs = pts.map(p => p[0])
-    const ys = pts.map(p => p[1])
-    const x1 = Math.min(...xs), x2 = Math.max(...xs)
-    const y1 = Math.min(...ys), y2 = Math.max(...ys)
-    const cx = (x1 + x2) / 2
-    const cy = (y1 + y2) / 2
+    const cfg = REGION_VIEW[regionId]
+    if (!cfg || dims.w === 0) return
     const W = dims.w, H = dims.h
-    const PAD = 0.72  // 72% de pantalla útil, 28% de marge
-
-    // Zoom per encabir la bounding box, però sempre > CLUSTER_THRESHOLD
-    const zFit = Math.min(
-      x2 > x1 ? (W * PAD) / (x2 - x1) : MAX_ZOOM,
-      y2 > y1 ? (H * PAD) / (y2 - y1) : MAX_ZOOM,
-    )
-    const z = Math.min(MAX_ZOOM, Math.max(CLUSTER_THRESHOLD + 0.1, zFit))
-
-    setZoom(z)
-    setPan({ x: W / 2 - cx * z, y: H / 2 - cy * z })
+    const svgCx = cfg.cx * W
+    const svgCy = cfg.cy * H
+    setZoom(cfg.z)
+    setPan({ x: W / 2 - svgCx * cfg.z, y: H / 2 - svgCy * cfg.z })
   }
 
   const zoomIn  = () => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))
