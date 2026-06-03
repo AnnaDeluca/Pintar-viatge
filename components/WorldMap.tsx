@@ -71,6 +71,7 @@ const REGIONS: Region[] = [
 interface GeoData {
   paths: { d: string | null; tone: keyof typeof TONE_HEX | null }[]
   pins: Record<string, [number, number]>
+  paintingPins: Record<string, [number, number]>  // posicions SVG de cada quadre individual
 }
 
 function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean } {
@@ -85,8 +86,6 @@ function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean 
         const topo = await res.json()
         // @ts-expect-error topojson types loose
         const fc = feature(topo, topo.objects.countries) as FeatureCollection
-        // Exclou l'Antàrtida (ISO 010) del càlcul de bounding box —
-        // si no, empeny tot el món populat cap a dalt i Sud-àfrica desapareix
         const fcForFit: FeatureCollection = {
           type: 'FeatureCollection',
           features: fc.features.filter((f: Feature) => Number((f as any).id) !== 10),
@@ -94,17 +93,26 @@ function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean 
         const proj = geoNaturalEarth1().fitSize([W, H], fcForFit)
         const path = geoPath(proj)
         const paths = fc.features
-          .filter((f: Feature) => Number((f as any).id) !== 10)  // tampoc la dibuixem
+          .filter((f: Feature) => Number((f as any).id) !== 10)
           .map((f: Feature) => ({
             d: path(f),
             tone: HIGHLIGHT[Number((f as any).id)] ?? null,
           }))
+        // Pins de cluster (regions)
         const pins: Record<string, [number, number]> = {}
         REGIONS.forEach(r => {
           const p = proj(r.coords)
           if (p) pins[r.id] = p
         })
-        if (alive) setGeo({ paths, pins })
+        // Pins individuals de cada quadre (per fer zoom-to-fit)
+        const paintingPins: Record<string, [number, number]> = {}
+        paintings.forEach(p => {
+          if (p.coords) {
+            const pt = proj(p.coords)
+            if (pt) paintingPins[p.id] = pt
+          }
+        })
+        if (alive) setGeo({ paths, pins, paintingPins })
       } catch {
         if (alive) setErr(true)
       }
@@ -220,6 +228,7 @@ function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 6
+const CLUSTER_THRESHOLD = 2.5  // zoom > X → mostra pins individuals
 
 export default function WorldMap() {
   const router = useRouter()
@@ -258,6 +267,34 @@ export default function WorldMap() {
   }
   const onPointerUp = () => { dragRef.current = null }
 
+  // Zoom-to-fit: calcula zoom i pan per mostrar tots els pins d'una regió
+  const zoomToRegion = (regionId: string) => {
+    if (!geo) return
+    const r = REGIONS.find(reg => reg.id === regionId)
+    if (!r) return
+    const pts = r.paintingIds.map(id => geo.paintingPins[id]).filter(Boolean) as [number, number][]
+    if (pts.length === 0) return
+
+    const xs = pts.map(p => p[0])
+    const ys = pts.map(p => p[1])
+    const x1 = Math.min(...xs), x2 = Math.max(...xs)
+    const y1 = Math.min(...ys), y2 = Math.max(...ys)
+    const cx = (x1 + x2) / 2
+    const cy = (y1 + y2) / 2
+    const W = dims.w, H = dims.h
+    const PAD = 0.72  // 72% de pantalla útil, 28% de marge
+
+    // Zoom per encabir la bounding box, però sempre > CLUSTER_THRESHOLD
+    const zFit = Math.min(
+      x2 > x1 ? (W * PAD) / (x2 - x1) : MAX_ZOOM,
+      y2 > y1 ? (H * PAD) / (y2 - y1) : MAX_ZOOM,
+    )
+    const z = Math.min(MAX_ZOOM, Math.max(CLUSTER_THRESHOLD + 0.1, zFit))
+
+    setZoom(z)
+    setPan({ x: W / 2 - cx * z, y: H / 2 - cy * z })
+  }
+
   const zoomIn  = () => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))
   const zoomOut = () => setZoom(z => {
     const next = Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2))
@@ -290,6 +327,16 @@ export default function WorldMap() {
 
   const handlePick = (id: string) => {
     router.push(`/pintar/${id}`)
+  }
+
+  // Quan es toca un cluster: zoom automàtic a la regió
+  const handleClusterTap = (regionId: string) => {
+    zoomToRegion(regionId)
+    // Si el cluster només té 1 quadre, ves-hi directament
+    const r = REGIONS.find(r => r.id === regionId)
+    if (r && r.paintingIds.length === 1) {
+      router.push(`/pintar/${r.paintingIds[0]}`)
+    }
   }
 
   // Ruta del viatge: Europa → Japó → Sud-àfrica
@@ -332,7 +379,8 @@ export default function WorldMap() {
           )}
 
           {/* Grup transformat per zoom + pan */}
-          <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+          <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}
+            style={{ transition: 'transform .6s cubic-bezier(.22,1,.36,1)' }}>
 
           {/* Països */}
           {geo && geo.paths.map((p, i) => (
@@ -363,7 +411,7 @@ export default function WorldMap() {
             const s = 1 / zoom
             return (
               <g key={r.id} transform={`translate(${p[0]},${p[1]}) scale(${s})`}
-                style={{ cursor: 'pointer' }} onClick={() => setRegion(r)}>
+                style={{ cursor: 'pointer' }} onClick={() => handleClusterTap(r.id)}>
                 {/* Anell pulsant */}
                 <circle r={13} fill={hex} opacity={0.18}>
                   <animate attributeName="r" values="13;26;13" dur="2.6s" repeatCount="indefinite" />
@@ -456,7 +504,7 @@ export default function WorldMap() {
           const hex = TONE_HEX[r.tone]
           const count = r.paintingIds.filter(id => paintingMap[id]).length
           return (
-            <button key={r.id} onClick={() => setRegion(r)}
+            <button key={r.id} onClick={() => handleClusterTap(r.id)}
               className="flex items-center gap-1.5 active:scale-95 transition-transform"
               style={{
                 padding: '7px 13px 7px 9px', borderRadius: 999,
