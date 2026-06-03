@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { type PaintingMeta } from '@/data/paintings'
 import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } from '@/components/ColoringCanvas'
@@ -132,6 +132,18 @@ function StudioBtn({ children, onClick, ariaLabel }: { children: React.ReactNode
 export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const isDots = painting.mechanic === 'dots'
   const accent = PIGMENTS[painting.id] ?? '#D85B3C'
+
+  // Comprova si hi ha una imatge personalitzada pujada via /admin
+  const [customImageUrl, setCustomImageUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (isDots) return
+    fetch('/api/admin/manifest')
+      .then(r => r.json())
+      .then((m: Record<string, string>) => {
+        if (m[painting.id]) setCustomImageUrl(m[painting.id])
+      })
+      .catch(() => {})
+  }, [painting.id, isDots])
 
   const canvasRef = useRef<ColoringCanvasHandle>(null)
   const [selectedColor, setSelectedColor] = useState(painting.palette[0] ?? '#E63946')
@@ -337,8 +349,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           ) : painting.imageUrl && !loadError ? (
             <ColoringCanvas
               ref={canvasRef}
-              imageUrl={painting.imageUrl}
-              sketchUrl={`/sketches/${painting.id}.svg`}
+              imageUrl={customImageUrl || painting.imageUrl}
+              sketchUrl={customImageUrl ? undefined : `/sketches/${painting.id}.svg`}
               selectedColor={selectedColor}
               tool={tool}
               brushSize={brushSize}
