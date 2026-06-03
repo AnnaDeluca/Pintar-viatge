@@ -140,6 +140,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
   const [trayOpen, setTrayOpen] = useState(true)  // safata oberta inicialment
+  const [showMuseum, setShowMuseum] = useState(false)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
   const [showFact, setShowFact] = useState(false)
@@ -239,6 +240,9 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             {painting.artist}
           </p>
         </div>
+        {painting.museum && (
+          <StudioBtn onClick={() => setShowMuseum(v => !v)} ariaLabel="Visita el museu">🗺️</StudioBtn>
+        )}
         <StudioBtn onClick={() => setShowFact(v => !v)} ariaLabel="Curiositat">💡</StudioBtn>
         <button
           onClick={undoAvailable ? handleUndo : undefined}
@@ -273,6 +277,46 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           </p>
         </div>
       )}
+
+      {/* Panell museu */}
+      {showMuseum && painting.museum && (() => {
+        const m = painting.museum
+        const mapsUrl = m.mapsQuery
+          ? `https://www.google.com/maps/search/${encodeURIComponent(m.mapsQuery)}`
+          : `https://www.google.com/maps/search/${encodeURIComponent(`${m.name} ${m.city}`)}`
+        return (
+          <div className="mx-4 mt-0.5 shrink-0"
+            style={{
+              borderRadius: 16, padding: '12px 15px',
+              background: 'rgba(46,106,158,0.18)',
+              border: '1px solid rgba(76,201,240,0.35)',
+              animation: 'floatUp .25s ease',
+            }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p style={{ margin: 0, color: '#AEE6FF', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
+                  On es pot veure
+                </p>
+                <p style={{ margin: '2px 0 0', color: '#E8F4FD', fontSize: 13.5, fontWeight: 700, lineHeight: 1.2 }}>
+                  {m.name}
+                </p>
+                <p style={{ margin: '1px 0 0', color: 'rgba(174,230,255,0.7)', fontSize: 12 }}>
+                  {m.city}, {m.country}
+                </p>
+              </div>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                className="shrink-0 flex items-center gap-1.5 active:scale-95 transition-transform"
+                style={{
+                  padding: '8px 14px', borderRadius: 999, textDecoration: 'none',
+                  background: 'rgba(76,201,240,0.25)', border: '1px solid rgba(76,201,240,0.4)',
+                  color: '#AEE6FF', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                }}>
+                🗺️ Maps
+              </a>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Canvas + referència — centrat al desktop amb max-width */}
       <div className="flex-1 flex gap-2 px-2 md:px-6 pt-2 min-h-0 items-center w-full max-w-6xl mx-auto"
