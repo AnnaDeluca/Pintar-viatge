@@ -1,11 +1,9 @@
-import { put, list } from '@vercel/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { paintings } from '@/data/paintings'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'pintem2024'
 
 export async function POST(req: NextRequest) {
-  // Autenticació simple
   const pw = req.headers.get('x-admin-password')
   if (pw !== ADMIN_PASSWORD) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
@@ -24,30 +22,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Quadre '${paintingId}' no trobat` }, { status: 404 })
   }
 
-  // Puja a Vercel Blob
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const blob = await put(
-    `custom-paintings/${paintingId}.${ext}`,
-    file,
-    { access: 'public', addRandomSuffix: false },
-  )
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json({ error: 'Vercel Blob no configurat. Segueix les instruccions del README.' }, { status: 503 })
+  }
 
-  // Actualitza el manifest (llista de URLs personalitzades)
+  // Import dinàmic per evitar errors en builds sense token
+  const { put, list } = await import('@vercel/blob')
+  const ext = file.name.split('.').pop() ?? 'jpg'
+  const blob = await put(`custom-paintings/${paintingId}.${ext}`, file, { access: 'public', addRandomSuffix: false })
+
   const manifestBlob = await list({ prefix: 'manifests/custom-sketches.json' })
   let manifest: Record<string, string> = {}
   if (manifestBlob.blobs.length > 0) {
-    try {
-      const res = await fetch(manifestBlob.blobs[0].url)
-      manifest = await res.json()
-    } catch {}
+    try { const r = await fetch(manifestBlob.blobs[0].url); manifest = await r.json() } catch {}
   }
   manifest[paintingId] = blob.url
-
-  await put(
-    'manifests/custom-sketches.json',
-    JSON.stringify(manifest, null, 2),
-    { access: 'public', addRandomSuffix: false },
-  )
+  await put('manifests/custom-sketches.json', JSON.stringify(manifest, null, 2), { access: 'public', addRandomSuffix: false })
 
   return NextResponse.json({ url: blob.url, paintingId })
 }

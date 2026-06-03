@@ -45,9 +45,10 @@ const REGIONS: Region[] = [
     id: 'europa', label: 'Europa', emoji: '🎨',
     coords: [11, 48], tone: 'terracotta',
     paintingIds: [
-      'lascaux','renoir','morisot','matisse','vigee','botticelli','artemisia',
-      'sofonisba','vangogh','cassatt','vermeer','mondrian','munch','velazquez',
-      'miro','lewitt','klee','delaunay','doesburg','kandinsky','klimt',
+      'tessellation','delaunay','klee','doesburg','mondrian','lewitt','miro',
+      'kandinsky','klimt','vangogh','hokusai','matisse','renoir','morisot',
+      'vigee','botticelli','artemisia','sofonisba','cassatt','vermeer',
+      'munch','velazquez','lascaux',
     ],
   },
   {
