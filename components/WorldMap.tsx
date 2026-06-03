@@ -252,7 +252,7 @@ function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
 }
 
 const MIN_ZOOM = 1
-const MAX_ZOOM = 10   // permet fer molt més zoom manualment
+const MAX_ZOOM = 20   // permet fer molt de zoom
 const CLUSTER_THRESHOLD = 2.5  // zoom > X → mostra pins individuals
 
 export default function WorldMap() {
@@ -277,20 +277,84 @@ export default function WorldMap() {
     sessionStorage.setItem('map-pan', JSON.stringify(pan))
   }, [zoom, pan])
 
-  // Drag per moure el mapa amb zoom
+  // ── Drag + Pinch-to-zoom amb Pointer Events ────────────────────
+  // Rastrejem tots els punters actius (dits / ratolí)
+  const ptrs = useRef<Map<number, { x: number; y: number }>>(new Map())
+  // Per al drag d'un dit
   const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null)
+  // Per al pinch de dos dits
+  const pinchRef = useRef<{ dist: number; midSvgX: number; midSvgY: number } | null>(null)
+
+  // Converteix coord de pantalla a coord del SVG (viewBox)
+  const screenToSvg = (clientX: number, clientY: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return { x: clientX, y: clientY }
+    const scaleX = dims.w / rect.width
+    const scaleY = dims.h / rect.height
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    }
+  }
+
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (zoom <= 1) return
-    ;(e.target as Element).setPointerCapture?.(e.pointerId)
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (ptrs.current.size === 1) {
+      // Un dit: inicia drag
+      dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y }
+      pinchRef.current = null
+    } else if (ptrs.current.size === 2) {
+      // Dos dits: inicia pinch
+      dragRef.current = null
+      const pts = Array.from(ptrs.current.values())
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const midX = (pts[0].x + pts[1].x) / 2
+      const midY = (pts[0].y + pts[1].y) / 2
+      const svgMid = screenToSvg(midX, midY)
+      // Punt SVG fix al qual fer zoom (en coordenades pre-transform)
+      const svgX = (svgMid.x - pan.x) / zoom
+      const svgY = (svgMid.y - pan.y) / zoom
+      pinchRef.current = { dist, midSvgX: svgX, midSvgY: svgY }
+    }
   }
+
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragRef.current) return
-    const dx = e.clientX - dragRef.current.startX
-    const dy = e.clientY - dragRef.current.startY
-    setPan({ x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy })
+    if (!ptrs.current.has(e.pointerId)) return
+    ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    if (ptrs.current.size === 1 && dragRef.current) {
+      // Drag
+      const dx = e.clientX - dragRef.current.startX
+      const dy = e.clientY - dragRef.current.startY
+      setPan({ x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy })
+    } else if (ptrs.current.size === 2 && pinchRef.current) {
+      // Pinch: zoom centrat al punt SVG fixat
+      const pts = Array.from(ptrs.current.values())
+      const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const scaleFactor = newDist / pinchRef.current.dist
+      const newMidX = (pts[0].x + pts[1].x) / 2
+      const newMidY = (pts[0].y + pts[1].y) / 2
+      const svgNewMid = screenToSvg(newMidX, newMidY)
+
+      setZoom(prev => {
+        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * scaleFactor))
+        // Ajusta pan per mantenir el punt SVG al mig dels dits
+        const newPanX = svgNewMid.x - pinchRef.current!.midSvgX * next
+        const newPanY = svgNewMid.y - pinchRef.current!.midSvgY * next
+        setPan({ x: newPanX, y: newPanY })
+        return next
+      })
+      pinchRef.current.dist = newDist
+    }
   }
-  const onPointerUp = () => { dragRef.current = null }
+
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    ptrs.current.delete(e.pointerId)
+    if (ptrs.current.size < 2) pinchRef.current = null
+    if (ptrs.current.size === 0) dragRef.current = null
+  }
 
   // Zoom predefinit per a cada cluster.
   // cx/cy: fracció [0,1] de l'SVG on és el centre geogràfic de la zona.
@@ -313,12 +377,20 @@ export default function WorldMap() {
     setPan({ x: W / 2 - pin[0] * z, y: H / 2 - pin[1] * z })
   }
 
-  const zoomIn  = () => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))
-  const zoomOut = () => setZoom(z => {
-    const next = Math.max(MIN_ZOOM, +(z / 1.6).toFixed(2))
-    if (next <= 1) setPan({ x: 0, y: 0 })
-    return next
-  })
+  // Zoom centrat al punt SVG que hi ha al mig de la pantalla
+  const zoomAround = (factor: number) => {
+    const W = dims.w, H = dims.h
+    const cx = W / 2, cy = H / 2
+    // Punt SVG fix al centre de pantalla
+    const svgCx = (cx - pan.x) / zoom
+    const svgCy = (cy - pan.y) / zoom
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor))
+    if (next <= 1) { setZoom(1); setPan({ x: 0, y: 0 }); return }
+    setZoom(next)
+    setPan({ x: cx - svgCx * next, y: cy - svgCy * next })
+  }
+  const zoomIn    = () => zoomAround(1.6)
+  const zoomOut   = () => zoomAround(1 / 1.6)
   const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
 
   // Mesura del contenidor — usem TANT l'amplada com l'alçada reals,
