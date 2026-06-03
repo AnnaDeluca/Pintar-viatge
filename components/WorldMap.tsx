@@ -29,6 +29,8 @@ const HIGHLIGHT: Record<number, keyof typeof TONE_HEX> = {
   710: 'viridian',   // Sud-àfrica
   840: 'ochre',      // EUA
   826: 'ochre',      // Regne Unit (Sargent)
+  356: 'plum',       // Índia (Varma)
+  858: 'ochre',      // Uruguai (Figari)
 }
 
 interface Region {
@@ -49,23 +51,35 @@ const PAINTING_COLOR: Record<string, string> = {
   hokusai:'#4CC9F0', kusama:'#F6C90E', homer:'#57CC99', sargent:'#FF6B6B',
   lewitt:'#E63946', ndebele:'#57CC99', miro:'#F6C90E', klee:'#F4A261',
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
+  varma:'#7C5C9E', figari:'#E0A52E',
 }
 
 const REGIONS: Region[] = [
   {
     id: 'europa', label: 'Europa', emoji: '🎨',
-    coords: [11, 48], tone: 'terracotta',
+    coords: [12, 48], tone: 'terracotta',
+    // tessellation no té coords geogràfiques → no al mapa individual
     paintingIds: [
-      'tessellation','delaunay','klee','doesburg','mondrian','lewitt','miro',
-      'kandinsky','klimt','vangogh','hokusai','matisse','renoir','morisot',
+      'delaunay','klee','doesburg','mondrian','lewitt','miro',
+      'kandinsky','klimt','vangogh','matisse','renoir','morisot',
       'vigee','botticelli','artemisia','sofonisba','cassatt','vermeer',
       'munch','velazquez','lascaux',
     ],
   },
   {
-    id: 'america', label: 'Amèrica', emoji: '🌾',
+    id: 'latam', label: 'Amèrica Llatina', emoji: '🥁',
+    coords: [-58, -25], tone: 'ochre',
+    paintingIds: ['figari'],
+  },
+  {
+    id: 'america', label: 'Amèrica del Nord', emoji: '🌾',
     coords: [-85, 40], tone: 'ochre',
     paintingIds: ['homer','sargent'],
+  },
+  {
+    id: 'india', label: 'Índia', emoji: '🪭',
+    coords: [78, 20], tone: 'plum',
+    paintingIds: ['varma'],
   },
   {
     id: 'japo', label: 'Japó', emoji: '🌊',
@@ -281,21 +295,22 @@ export default function WorldMap() {
   // Zoom predefinit per a cada cluster.
   // cx/cy: fracció [0,1] de l'SVG on és el centre geogràfic de la zona.
   // z: nivell de zoom que mostra tots els pins individuals.
-  const REGION_VIEW: Record<string, { z: number; cx: number; cy: number }> = {
-    europa:    { z: 3.0, cx: 0.54, cy: 0.38 },
-    america:   { z: 4.0, cx: 0.20, cy: 0.38 },
-    japo:      { z: 6.0, cx: 0.84, cy: 0.37 },
-    sudafrica: { z: 5.5, cx: 0.58, cy: 0.74 },
+  // Zoom per a cada cluster. El centre és el geo.pins[regionId] projectat
+  // (posició SVG exacta del pin de la regió — ja correcte al mapa).
+  const REGION_ZOOM: Record<string, number> = {
+    europa: 3.0, latam: 4.5, america: 4.0,
+    india: 5.5, japo: 6.0, sudafrica: 5.5,
   }
 
   const zoomToRegion = (regionId: string) => {
-    const cfg = REGION_VIEW[regionId]
-    if (!cfg || dims.w === 0) return
+    if (!geo) return
+    const pin = geo.pins[regionId]   // posició SVG ja projectada correctament
+    if (!pin || dims.w === 0) return
+    const z = REGION_ZOOM[regionId] ?? 3.5
     const W = dims.w, H = dims.h
-    const svgCx = cfg.cx * W
-    const svgCy = cfg.cy * H
-    setZoom(cfg.z)
-    setPan({ x: W / 2 - svgCx * cfg.z, y: H / 2 - svgCy * cfg.z })
+    setZoom(z)
+    // Centra el pin al mig de la pantalla
+    setPan({ x: W / 2 - pin[0] * z, y: H / 2 - pin[1] * z })
   }
 
   const zoomIn  = () => setZoom(z => Math.min(MAX_ZOOM, +(z * 1.6).toFixed(2)))

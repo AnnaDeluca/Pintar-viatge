@@ -63,6 +63,32 @@ export const paintings: PaintingMeta[] = [
     coords: [139.7, 36.0],
     museum: { name: 'Yayoi Kusama Museum', city: 'Tòquio', country: 'Japó', url: 'https://yayoikusamamuseum.jp', mapsQuery: 'Yayoi Kusama Museum Tokyo' },
   },
+  // ── Índia ──────────────────────────────────────────────────────
+  {
+    id: 'varma',
+    title: 'Dona amb ventall',
+    artist: 'Raja Ravi Varma',
+    year: 1893, country: 'Índia', flag: '🇮🇳', emoji: '🪭',
+    funFact: 'El Raja Ravi Varma va ser el primer pintor indi a usar tècniques europees a l\'oli. Va combinar l\'art occidental amb la tradició índia i va fer famosa la figura de la dona amb sari a tot el món!',
+    palette: ['#4CC9F0','#AEE6FF','#E63946','#F4A261','#8B4513','#F5DEB3','#57CC99','#2364AA'],
+    regions: [],
+    imageUrl: '/paintings/varma.jpg', thumbUrl: '/paintings/varma-thumb.jpg',
+    coords: [76.9, 10.5],
+    museum: { name: 'Victoria & Albert Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.vam.ac.uk', mapsQuery: 'Victoria Albert Museum London' },
+  },
+  // ── Amèrica Llatina ────────────────────────────────────────────
+  {
+    id: 'figari',
+    title: 'Candombe',
+    artist: 'Pedro Figari',
+    year: 1921, country: 'Uruguai', flag: '🇺🇾', emoji: '🥁',
+    funFact: 'El Candombe és un ball afro-uruguaià que els esclaus africans van portar al Riu de la Plata. En Figari l\'estimava molt i el va pintar centenars de vegades!',
+    palette: ['#8B4513','#F4A261','#E63946','#F6C90E','#1A1A1A','#FFFFFF','#57CC99','#2364AA'],
+    regions: [],
+    imageUrl: '/paintings/figari.jpg', thumbUrl: '/paintings/figari-thumb.jpg',
+    coords: [-56.2, -34.9],
+    museum: { name: 'Museu Nacional d\'Arts Visuals', city: 'Montevideo', country: 'Uruguai', url: 'https://mnav.gub.uy', mapsQuery: 'Museo Nacional Artes Visuales Montevideo Uruguay' },
+  },
   // ── Amèrica del Nord ───────────────────────────────────────────
   {
     id: 'homer',
@@ -283,7 +309,7 @@ export const paintings: PaintingMeta[] = [
     palette: ['#E63946','#F6C90E','#2364AA','#57CC99','#F4A261','#8B5CF6','#FF6B6B','#4CC9F0','#FFD700','#2E8B57'],
     regions: [],
     imageUrl: '/paintings/tessellation.jpg', thumbUrl: '/paintings/tessellation-thumb.jpg',
-    coords: [0, 20],
+    // sense coords — és matemàtiques universals, no té ubicació física
   },
   {
     id: 'klee',
