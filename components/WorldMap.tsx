@@ -53,8 +53,9 @@ const PAINTING_COLOR: Record<string, string> = {
   hokusai:'#4CC9F0', kusama:'#F6C90E', homer:'#57CC99', sargent:'#FF6B6B',
   lewitt:'#E63946', ndebele:'#57CC99', miro:'#F6C90E', klee:'#F4A261',
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
-  varma:'#7C5C9E', figari:'#E0A52E',
+  varma:'#7C5C9E', figari:'#E0A52E', torres:'#D85B3C', abaporu:'#4CC9F0',
   nebamun:'#E0A52E', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
+  popart:'#FF6B6B',
 }
 
 const REGIONS: Region[] = [
@@ -72,12 +73,12 @@ const REGIONS: Region[] = [
   {
     id: 'latam', label: 'Amèrica Llatina', emoji: '🥁',
     coords: [-58, -25], tone: 'ochre',
-    paintingIds: ['figari'],
+    paintingIds: ['torres','figari','abaporu'],
   },
   {
     id: 'america', label: 'Amèrica del Nord', emoji: '🌾',
     coords: [-85, 40], tone: 'ochre',
-    paintingIds: ['homer','sargent'],
+    paintingIds: ['homer','sargent','popart'],
   },
   {
     id: 'india', label: 'Índia', emoji: '🪭',

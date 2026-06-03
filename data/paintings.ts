@@ -117,6 +117,18 @@ export const paintings: PaintingMeta[] = [
   },
   // ── Amèrica Llatina ────────────────────────────────────────────
   {
+    id: 'torres',
+    title: 'Figures i estructura',
+    artist: 'Joaquín Torres-García',
+    year: 1930, country: 'Uruguai', flag: '🇺🇾', emoji: '🏛️',
+    funFact: 'Torres-García va inventar l\'art "Universalismo Constructivo" a Montevideo. Dividia els quadres en graelles i omplia cada casella amb símbols antics: peixos, cases, escales, sol... Com un jeroglífic modern!',
+    palette: ['#8B4513','#D2691E','#F4A261','#1A1A2E','#FFFFFF','#F6C90E','#E63946','#4CC9F0'],
+    regions: [],
+    imageUrl: '/paintings/torres.jpg', thumbUrl: '/paintings/torres-thumb.jpg',
+    coords: [-56.2, -34.85],
+    museum: { name: 'Museo Torres García', city: 'Montevideo', country: 'Uruguai', url: 'https://www.torresgarcia.org.uy', mapsQuery: 'Museo Torres Garcia Montevideo Uruguay' },
+  },
+  {
     id: 'figari',
     title: 'Candombe',
     artist: 'Pedro Figari',
@@ -337,6 +349,29 @@ export const paintings: PaintingMeta[] = [
     imageUrl: '/paintings/munch.jpg', thumbUrl: '/paintings/munch-thumb.jpg',
     coords: [10.7, 59.9],
     museum: { name: 'Munchmuseet', city: 'Oslo', country: 'Noruega', url: 'https://www.munchmuseet.no', mapsQuery: 'Munchmuseet Oslo Norway' },
+  },
+  // ── Pop Art i estils propis ────────────────────────────────────
+  {
+    id: 'popart',
+    title: 'Pop Art! (estil Warhol)',
+    artist: 'Art original, inspirat en Warhol',
+    year: 2024, country: 'EUA', flag: '🇺🇸', emoji: '⭐',
+    funFact: 'Andy Warhol agafava cares famoses i les repetia en graelles de molts colors. Deia que qualsevol cosa podia ser art: una llauna de sopa, un dòlar, una estrella de cinema. Aquí tens 4 cares iguals per pintar diferent!',
+    palette: ['#FF6B6B','#F6C90E','#4CC9F0','#57CC99','#F093FB','#E63946','#8B5CF6','#1A1A1A'],
+    regions: [],
+    imageUrl: '/paintings/popart.jpg', thumbUrl: '/paintings/popart-thumb.jpg',
+    coords: [-74.0, 40.7],
+  },
+  {
+    id: 'abaporu',
+    title: 'Abaporu (inspirat en Tarsila)',
+    artist: 'Art original, inspirat en Tarsila do Amaral',
+    year: 2024, country: 'Brasil', flag: '🇧🇷', emoji: '🦶',
+    funFact: 'L\'Abaporu original de Tarsila do Amaral té la figura humana amb el peu gegant. "Abaporu" en tupi vol dir "l\'home que menja gent"! Aquí tens una versió pròpia per pintar amb colors tropicals.',
+    palette: ['#4CC9F0','#57CC99','#F6C90E','#F4A261','#C4956A','#2E8B57','#87CEEB','#E63946'],
+    regions: [],
+    imageUrl: '/paintings/abaporu.jpg', thumbUrl: '/paintings/abaporu-thumb.jpg',
+    coords: [-46.6, -23.5],
   },
   // ── Matemàtiques i patrons ─────────────────────────────────────
   {
