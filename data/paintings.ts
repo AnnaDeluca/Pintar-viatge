@@ -63,6 +63,45 @@ export const paintings: PaintingMeta[] = [
     coords: [139.7, 36.0],
     museum: { name: 'Yayoi Kusama Museum', city: 'Tòquio', country: 'Japó', url: 'https://yayoikusamamuseum.jp', mapsQuery: 'Yayoi Kusama Museum Tokyo' },
   },
+  // ── Egipte Antic ───────────────────────────────────────────────
+  {
+    id: 'nebamun',
+    title: 'Jardí de Nebamun',
+    artist: 'Artista anònim, Egipte',
+    year: '~1350 a.C.', country: 'Egipte', flag: '🇪🇬', emoji: '🌿',
+    funFact: 'Fa 3.300 anys, un pintor egipci va decorar la tomba de Nebamun amb aquest jardí. Els colors vermell, blau i verd van sobreviure mil·lennis perquè els antics egipcis feien els pigments amb minerals!',
+    palette: ['#E63946','#4CC9F0','#57CC99','#F4A261','#8B4513','#F5DEB3','#2364AA','#1A1A1A'],
+    regions: [],
+    imageUrl: '/paintings/nebamun.jpg', thumbUrl: '/paintings/nebamun-thumb.jpg',
+    coords: [32.5, 25.7],
+    museum: { name: 'British Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.britishmuseum.org', mapsQuery: 'British Museum London' },
+  },
+  // ── Corea ──────────────────────────────────────────────────────
+  {
+    id: 'minhwa',
+    title: 'Tigre i garses',
+    artist: 'Art popular Minhwa',
+    year: 'S. XVIII-XIX', country: 'Corea', flag: '🇰🇷', emoji: '🐯',
+    funFact: 'El Minhwa és l\'art popular coreà. El tigre és el guardià dels coreans i sempre surt en parella amb les garses, que simbolitzen la bona sort. Quina escena tan animada!',
+    palette: ['#F4A261','#8B4513','#1A1A1A','#FFFFFF','#57CC99','#E63946','#F6C90E','#4CC9F0'],
+    regions: [],
+    imageUrl: '/paintings/minhwa.jpg', thumbUrl: '/paintings/minhwa-thumb.jpg',
+    coords: [127.0, 37.5],
+    museum: { name: 'National Folk Museum of Korea', city: 'Seül', country: 'Corea del Sud', url: 'https://www.nfm.go.kr', mapsQuery: 'National Folk Museum Korea Seoul' },
+  },
+  // ── Japó (ukiyo-e) ─────────────────────────────────────────────
+  {
+    id: 'hiroshige2',
+    title: 'Pont de neu',
+    artist: 'Utagawa Hiroshige',
+    year: 1833, country: 'Japó', flag: '🇯🇵', emoji: '❄️',
+    funFact: 'Hiroshige era amic de Hokusai i tots dos van canviar com els artistes europeus veien el món. Van Gogh va copiar alguns dels seus quadres!',
+    palette: ['#4CC9F0','#AEE6FF','#FFFFFF','#1A1A2E','#8B4513','#F5DEB3','#0A3060','#2364AA'],
+    regions: [],
+    imageUrl: '/paintings/hiroshige2.jpg', thumbUrl: '/paintings/hiroshige2-thumb.jpg',
+    coords: [135.5, 34.7],
+    museum: { name: 'Brooklyn Museum', city: 'Nova York', country: 'EUA', url: 'https://www.brooklynmuseum.org', mapsQuery: 'Brooklyn Museum New York' },
+  },
   // ── Índia ──────────────────────────────────────────────────────
   {
     id: 'varma',

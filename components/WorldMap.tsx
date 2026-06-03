@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { geoNaturalEarth1, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
@@ -31,6 +31,8 @@ const HIGHLIGHT: Record<number, keyof typeof TONE_HEX> = {
   826: 'ochre',      // Regne Unit (Sargent)
   356: 'plum',       // Índia (Varma)
   858: 'ochre',      // Uruguai (Figari)
+  818: 'ochre',      // Egipte
+  410: 'prussian',   // Corea del Sud
 }
 
 interface Region {
@@ -52,6 +54,7 @@ const PAINTING_COLOR: Record<string, string> = {
   lewitt:'#E63946', ndebele:'#57CC99', miro:'#F6C90E', klee:'#F4A261',
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
   varma:'#7C5C9E', figari:'#E0A52E',
+  nebamun:'#E0A52E', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
 }
 
 const REGIONS: Region[] = [
@@ -82,9 +85,19 @@ const REGIONS: Region[] = [
     paintingIds: ['varma'],
   },
   {
+    id: 'egipte', label: 'Egipte Antic', emoji: '🌿',
+    coords: [32, 26], tone: 'ochre',
+    paintingIds: ['nebamun'],
+  },
+  {
+    id: 'korea', label: 'Corea', emoji: '🐯',
+    coords: [127, 37], tone: 'prussian',
+    paintingIds: ['minhwa'],
+  },
+  {
     id: 'japo', label: 'Japó', emoji: '🌊',
     coords: [138, 37], tone: 'prussian',
-    paintingIds: ['hokusai','kusama'],
+    paintingIds: ['hokusai','kusama','hiroshige2'],
   },
   {
     id: 'sudafrica', label: 'Sud-àfrica', emoji: '🏠',
@@ -261,100 +274,102 @@ export default function WorldMap() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [dims, setDims] = useState({ w: 380, h: 264 })
 
-  // Zoom & pan — recuperat des de sessionStorage
-  const [zoom, setZoom] = useState(() => {
+  // Zoom & pan — useRef per tenir sempre el valor actual en event handlers
+  // useState per forçar re-renders
+  const [zoom, setZoomState] = useState(() => {
     if (typeof window === 'undefined') return 1
     return Number(sessionStorage.getItem('map-zoom') || '1')
   })
-  const [pan, setPan] = useState<{ x: number; y: number }>(() => {
+  const [pan, setPanState] = useState<{ x: number; y: number }>(() => {
     if (typeof window === 'undefined') return { x: 0, y: 0 }
     const saved = sessionStorage.getItem('map-pan')
     return saved ? JSON.parse(saved) : { x: 0, y: 0 }
   })
+  // Refs per a event handlers (sempre actuals, sense stale closure)
+  const zoomRef = useRef(zoom)
+  const panRef = useRef(pan)
 
-  useEffect(() => {
-    sessionStorage.setItem('map-zoom', String(zoom))
-    sessionStorage.setItem('map-pan', JSON.stringify(pan))
-  }, [zoom, pan])
+  const setView = useCallback((z: number, p: { x: number; y: number }) => {
+    const clampedZ = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z))
+    zoomRef.current = clampedZ
+    panRef.current = p
+    setZoomState(clampedZ)
+    setPanState(p)
+    sessionStorage.setItem('map-zoom', String(clampedZ))
+    sessionStorage.setItem('map-pan', JSON.stringify(p))
+  }, [])
+
+  // Alias per compatibilitat
+  const setZoom = (z: number) => setView(z, panRef.current)
+  const setPan = (p: { x: number; y: number }) => setView(zoomRef.current, p)
 
   // ── Drag + Pinch-to-zoom amb Pointer Events ────────────────────
-  // Rastrejem tots els punters actius (dits / ratolí)
   const ptrs = useRef<Map<number, { x: number; y: number }>>(new Map())
-  // Per al drag d'un dit
   const dragRef = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null)
-  // Per al pinch de dos dits
   const pinchRef = useRef<{ dist: number; midSvgX: number; midSvgY: number } | null>(null)
 
-  // Converteix coord de pantalla a coord del SVG (viewBox)
-  const screenToSvg = (clientX: number, clientY: number) => {
+  const screenToSvg = useCallback((clientX: number, clientY: number) => {
     const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return { x: clientX, y: clientY }
+    if (!rect || rect.width === 0) return { x: clientX, y: clientY }
     const scaleX = dims.w / rect.width
     const scaleY = dims.h / rect.height
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-    }
-  }
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY }
+  }, [dims])
 
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+  const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     if (ptrs.current.size === 1) {
-      // Un dit: inicia drag
-      dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: pan.x, startPanY: pan.y }
+      dragRef.current = { startX: e.clientX, startY: e.clientY, startPanX: panRef.current.x, startPanY: panRef.current.y }
       pinchRef.current = null
     } else if (ptrs.current.size === 2) {
-      // Dos dits: inicia pinch
       dragRef.current = null
       const pts = Array.from(ptrs.current.values())
       const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
       const midX = (pts[0].x + pts[1].x) / 2
       const midY = (pts[0].y + pts[1].y) / 2
       const svgMid = screenToSvg(midX, midY)
-      // Punt SVG fix al qual fer zoom (en coordenades pre-transform)
-      const svgX = (svgMid.x - pan.x) / zoom
-      const svgY = (svgMid.y - pan.y) / zoom
-      pinchRef.current = { dist, midSvgX: svgX, midSvgY: svgY }
+      const z = zoomRef.current, p = panRef.current
+      pinchRef.current = {
+        dist,
+        midSvgX: (svgMid.x - p.x) / z,
+        midSvgY: (svgMid.y - p.y) / z,
+      }
     }
-  }
+  }, [screenToSvg])
 
-  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+  const onPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!ptrs.current.has(e.pointerId)) return
+    e.preventDefault()
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     if (ptrs.current.size === 1 && dragRef.current) {
-      // Drag
       const dx = e.clientX - dragRef.current.startX
       const dy = e.clientY - dragRef.current.startY
-      setPan({ x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy })
+      setView(zoomRef.current, { x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy })
     } else if (ptrs.current.size === 2 && pinchRef.current) {
-      // Pinch: zoom centrat al punt SVG fixat
       const pts = Array.from(ptrs.current.values())
       const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
       const scaleFactor = newDist / pinchRef.current.dist
       const newMidX = (pts[0].x + pts[1].x) / 2
       const newMidY = (pts[0].y + pts[1].y) / 2
       const svgNewMid = screenToSvg(newMidX, newMidY)
-
-      setZoom(prev => {
-        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * scaleFactor))
-        // Ajusta pan per mantenir el punt SVG al mig dels dits
-        const newPanX = svgNewMid.x - pinchRef.current!.midSvgX * next
-        const newPanY = svgNewMid.y - pinchRef.current!.midSvgY * next
-        setPan({ x: newPanX, y: newPanY })
-        return next
-      })
+      // Usa ref (sempre actual, no stale)
+      const newZ = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomRef.current * scaleFactor))
+      const newPx = svgNewMid.x - pinchRef.current.midSvgX * newZ
+      const newPy = svgNewMid.y - pinchRef.current.midSvgY * newZ
+      setView(newZ, { x: newPx, y: newPy })
       pinchRef.current.dist = newDist
     }
-  }
+  }, [screenToSvg, setView])
 
-  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+  const onPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     ptrs.current.delete(e.pointerId)
     if (ptrs.current.size < 2) pinchRef.current = null
     if (ptrs.current.size === 0) dragRef.current = null
-  }
+  }, [])
 
   // Zoom predefinit per a cada cluster.
   // cx/cy: fracció [0,1] de l'SVG on és el centre geogràfic de la zona.
@@ -363,35 +378,25 @@ export default function WorldMap() {
   // (posició SVG exacta del pin de la regió — ja correcte al mapa).
   const REGION_ZOOM: Record<string, number> = {
     europa: 3.0, latam: 4.5, america: 4.0,
-    india: 5.5, japo: 6.0, sudafrica: 5.5,
+    india: 5.5, egipte: 5.5, korea: 7.0,
+    japo: 6.0, sudafrica: 5.5,
   }
 
-  const zoomToRegion = (regionId: string) => {
-    if (!geo) return
-    const pin = geo.pins[regionId]   // posició SVG ja projectada correctament
-    if (!pin || dims.w === 0) return
-    const z = REGION_ZOOM[regionId] ?? 3.5
-    const W = dims.w, H = dims.h
-    setZoom(z)
-    // Centra el pin al mig de la pantalla
-    setPan({ x: W / 2 - pin[0] * z, y: H / 2 - pin[1] * z })
-  }
+  // zoomToRegion definit mes avall, despres de geo
 
-  // Zoom centrat al punt SVG que hi ha al mig de la pantalla
-  const zoomAround = (factor: number) => {
+  const zoomAround = useCallback((factor: number) => {
     const W = dims.w, H = dims.h
     const cx = W / 2, cy = H / 2
-    // Punt SVG fix al centre de pantalla
-    const svgCx = (cx - pan.x) / zoom
-    const svgCy = (cy - pan.y) / zoom
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor))
-    if (next <= 1) { setZoom(1); setPan({ x: 0, y: 0 }); return }
-    setZoom(next)
-    setPan({ x: cx - svgCx * next, y: cy - svgCy * next })
-  }
+    const z = zoomRef.current, p = panRef.current
+    const svgCx = (cx - p.x) / z
+    const svgCy = (cy - p.y) / z
+    const next = z * factor
+    if (next <= 1) { setView(1, { x: 0, y: 0 }); return }
+    setView(next, { x: cx - svgCx * next, y: cy - svgCy * next })
+  }, [dims, setView])
   const zoomIn    = () => zoomAround(1.6)
   const zoomOut   = () => zoomAround(1 / 1.6)
-  const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
+  const resetZoom = () => setView(1, { x: 0, y: 0 })
 
   // Mesura del contenidor — usem TANT l'amplada com l'alçada reals,
   // així el mapa s'adapta a l'espai real i no es retalla per overflow
@@ -418,6 +423,16 @@ export default function WorldMap() {
   const handlePick = (id: string) => {
     router.push(`/pintar/${id}`)
   }
+
+  // Definit aquí perquè necessita geo (declarat a sobre)
+  const zoomToRegion = useCallback((regionId: string) => {
+    if (!geo) return
+    const pin = geo.pins[regionId]
+    if (!pin || dims.w === 0) return
+    const z = REGION_ZOOM[regionId] ?? 3.5
+    const W = dims.w, H = dims.h
+    setView(z, { x: W / 2 - pin[0] * z, y: H / 2 - pin[1] * z })
+  }, [geo, dims, setView])
 
   // Quan es toca un cluster: zoom automàtic a la regió
   const handleClusterTap = (regionId: string) => {
