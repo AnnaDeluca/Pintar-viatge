@@ -8,7 +8,7 @@ import Kusama, { type Dot } from '@/components/paintings/Kusama'
 import { saveArtwork } from '@/lib/artworks'
 
 // Obres originals creades com a SVG (no tenen foto de base per al pencil sketch)
-const SVG_ONLY = new Set(['popart','abaporu','okeeffe','lichtenstein','basquiat','tessellation'])
+const SVG_ONLY = new Set(['tessellation'])
 
 // Tria l'URL del sketch correcte: PNG (pencil sketch) per a pintures reals,
 // SVG per a obres originals creades per a l'app
