@@ -510,13 +510,44 @@ export default function WorldMap() {
           )}
 
           {/* Pins INDIVIDUALS (quan el zoom és prou alt) */}
-          {geo && zoom >= CLUSTER_THRESHOLD && paintings.filter(p => p.coords).map(p => {
-            const pt = geo.paintingPins[p.id]
-            if (!pt) return null
-            const color = PAINTING_COLOR[p.id] ?? '#D85B3C'
-            const s = 1 / zoom
-            return (
-              <g key={p.id} transform={`translate(${pt[0]},${pt[1]}) scale(${s})`}
+          {geo && zoom >= CLUSTER_THRESHOLD && (() => {
+            // Agrupa les obres amb coordenades molt properes i les distribueix en cercle
+            // perquè cap quedi amagada darrere d'una altra.
+            const TOLERANCE = 6   // unitats SVG per considerar "mateix lloc"
+            // SPREAD_R: radi del cercle en unitats SVG. Dividim per zoom perquè
+            // en pantalla sigui sempre ~18px independentment del zoom.
+            const SPREAD_R = 18 / zoom
+
+            // 1. Agrupa per proximitat
+            const groups: { cx: number; cy: number; ids: string[] }[] = []
+            paintings.filter(p => p.coords).forEach(p => {
+              const pin = geo.paintingPins[p.id]
+              if (!pin) return
+              const g = groups.find(g => Math.hypot(g.cx - pin[0], g.cy - pin[1]) < TOLERANCE)
+              if (g) g.ids.push(p.id)
+              else groups.push({ cx: pin[0], cy: pin[1], ids: [p.id] })
+            })
+
+            // 2. Calcula posicions distribuïdes en cercle
+            const spread: Record<string, [number, number]> = {}
+            groups.forEach(g => {
+              if (g.ids.length === 1) {
+                spread[g.ids[0]] = [g.cx, g.cy]
+              } else {
+                g.ids.forEach((id, i) => {
+                  const angle = (2 * Math.PI * i / g.ids.length) - Math.PI / 2
+                  spread[id] = [g.cx + Math.cos(angle) * SPREAD_R, g.cy + Math.sin(angle) * SPREAD_R]
+                })
+              }
+            })
+
+            return paintings.filter(p => p.coords).map(p => {
+              const pt = spread[p.id]
+              if (!pt) return null
+              const color = PAINTING_COLOR[p.id] ?? '#D85B3C'
+              const s = 1 / zoom
+              return (
+                <g key={p.id} transform={`translate(${pt[0]},${pt[1]}) scale(${s})`}
                 style={{ cursor: 'pointer' }} onClick={() => router.push(`/pintar/${p.id}`)}>
                 {/* Zona de click */}
                 <circle r={28} fill="transparent" />
@@ -542,7 +573,8 @@ export default function WorldMap() {
                 )}
               </g>
             )
-          })}
+          })
+          })()}
 
           {/* Pins de CLUSTER (quan el zoom és baix) */}
           {geo && zoom < CLUSTER_THRESHOLD && REGIONS.map(r => {
