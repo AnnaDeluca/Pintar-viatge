@@ -163,107 +163,185 @@ function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean 
   return { geo, err }
 }
 
-interface PickerProps {
+// ── Carrusel Netflix ──────────────────────────────────────────────
+interface NetflixCarouselProps {
   region: Region | null
   paintingMap: Record<string, PaintingMeta>
   onClose: () => void
   onPick: (id: string) => void
 }
 
-function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
+function NetflixCarousel({ region, paintingMap, onClose, onPick }: NetflixCarouselProps) {
+  const [idx, setIdx] = React.useState(0)
+  const touchX = React.useRef<number | null>(null)
+
+  React.useEffect(() => { setIdx(0) }, [region?.id])
+
   if (!region) return null
   const hex = TONE_HEX[region.tone]
   const items = region.paintingIds.map(id => paintingMap[id]).filter(Boolean)
+  if (!items.length) return null
+  const p = items[idx]
+  const total = items.length
+
+  const prev = () => setIdx(i => (i - 1 + total) % total)
+  const next = () => setIdx(i => (i + 1) % total)
 
   return (
-    <div className="fixed inset-0 z-30">
+    <div className="fixed inset-0 z-30 flex flex-col" style={{ animation: 'fadeIn .2s ease' }}>
       {/* Scrim */}
-      <div onClick={onClose}
-        className="absolute inset-0"
-        style={{ background: 'rgba(20,26,34,0.32)', animation: 'fadeIn .2s ease' }} />
-      {/* Sheet */}
-      <div className="absolute left-0 right-0 bottom-0 pb-safe"
-        style={{
-          background: 'var(--paper-2)',
-          borderTopLeftRadius: 30, borderTopRightRadius: 30,
-          boxShadow: '0 -14px 40px rgba(35,50,62,0.25)',
-          paddingBottom: 30, animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)',
-          maxHeight: '78vh', overflowY: 'auto',
+      <div onClick={onClose} className="absolute inset-0"
+        style={{ background: 'rgba(10,8,6,0.75)', backdropFilter: 'blur(4px)' }} />
+
+      {/* Carrusel centrat verticalment */}
+      <div className="relative flex flex-col items-center justify-center flex-1 px-4"
+        onTouchStart={e => { touchX.current = e.touches[0].clientX }}
+        onTouchEnd={e => {
+          if (touchX.current === null) return
+          const dx = e.changedTouches[0].clientX - touchX.current
+          if (dx < -40) next()
+          else if (dx > 40) prev()
+          touchX.current = null
         }}>
-        {/* Drag handle */}
-        <div className="flex justify-center pt-2.5">
-          <div style={{ width: 42, height: 5, borderRadius: 5, background: 'var(--line)' }} />
-        </div>
 
-        {/* Header */}
-        <div className="flex items-center gap-3 px-5 pt-3 pb-1">
-          <div className="flex items-center justify-center shrink-0"
-            style={{
-              width: 46, height: 46, borderRadius: 14, fontSize: 24,
-              background: `color-mix(in srgb, ${hex} 16%, white)`,
-              border: `1.5px solid color-mix(in srgb, ${hex} 40%, white)`,
-            }}>
-            {region.emoji}
-          </div>
-          <div className="flex-1 min-w-0">
+        {/* Imatge gran — estil Netflix */}
+        <div className="relative w-full" style={{ maxWidth: 380 }}>
+          {/* Fons difuminat de la imatge */}
+          {p.thumbUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.thumbUrl} alt="" aria-hidden
+              style={{
+                position: 'absolute', inset: -20, width: 'calc(100% + 40px)', height: 'calc(100% + 40px)',
+                objectFit: 'cover', filter: 'blur(24px) brightness(0.5)', borderRadius: 30,
+                pointerEvents: 'none',
+              }} />
+          )}
+          {/* Card principal */}
+          <button onClick={() => onPick(p.id)}
+            className="relative w-full active:scale-95 transition-transform"
+            style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}>
             <div style={{
-              fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, lineHeight: 1.1,
-              color: 'var(--ink)',
+              width: '100%', aspectRatio: '3/2', borderRadius: 22, overflow: 'hidden',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
             }}>
-              {region.label}
+              {p.thumbUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.thumbUrl} alt={p.title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <div style={{
+                  width: '100%', height: '100%', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', background: '#efe8d8', fontSize: 80,
+                }}>
+                  {p.emoji}
+                </div>
+              )}
+              {/* Gradient inferior */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)',
+              }} />
+              {/* CTA */}
+              <div style={{
+                position: 'absolute', bottom: 16, left: 0, right: 0, textAlign: 'center',
+              }}>
+                <span style={{
+                  background: 'white', color: '#1A1A1A', padding: '8px 22px',
+                  borderRadius: 999, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14,
+                }}>
+                  🎨 Pinta!
+                </span>
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--ink-50)', marginTop: 1, fontFamily: 'var(--font-body)' }}>
-              Tria una obra per pintar
+          </button>
+
+          {/* Info sota la card */}
+          <div style={{ textAlign: 'center', marginTop: 16, position: 'relative' }}>
+            {/* Artista — el protagonista */}
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
+              color: 'white', lineHeight: 1.1,
+            }}>
+              {p.artist}
+            </div>
+            {/* Títol + any */}
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 14, color: 'rgba(255,255,255,0.7)',
+              marginTop: 4,
+            }}>
+              {p.emoji} {p.title} · {p.year}
+            </div>
+            {/* País */}
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 12, color: 'rgba(255,255,255,0.45)',
+              marginTop: 2,
+            }}>
+              {p.flag} {p.country}
             </div>
           </div>
-          <button onClick={onClose}
-            className="flex items-center justify-center active:scale-90 transition-transform"
-            style={{
-              width: 34, height: 34, borderRadius: 17, border: 'none',
-              background: 'var(--paper)', color: 'var(--ink-50)', fontSize: 20,
-              boxShadow: 'inset 0 0 0 1px var(--line)',
-            }}>
-            ×
-          </button>
+
+          {/* Punts indicadors */}
+          {total > 1 && (
+            <div className="flex justify-center gap-2" style={{ marginTop: 14 }}>
+              {items.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)}
+                  style={{
+                    width: i === idx ? 20 : 7, height: 7, borderRadius: 4,
+                    background: i === idx ? `color-mix(in srgb, ${hex} 80%, white)` : 'rgba(255,255,255,0.3)',
+                    border: 'none', cursor: 'pointer', padding: 0,
+                    transition: 'width .2s ease, background .2s ease',
+                  }} />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Paintings */}
-        <div className="flex gap-3.5 px-5 pt-3.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {items.map(p => (
-            <button key={p.id} onClick={() => onPick(p.id)}
-              className="shrink-0 text-left active:scale-95 transition-transform"
-              style={{ width: 152, border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}>
-              <div className="flex items-center justify-center overflow-hidden"
-                style={{
-                  width: 152, height: 120, borderRadius: 16, background: '#efe8d8',
-                  boxShadow: '0 8px 18px rgba(35,50,62,0.18), 0 0 0 1px var(--line)',
-                }}>
-                {p.thumbUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.thumbUrl} alt={p.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ fontSize: 46 }}>{p.emoji}</span>
-                )}
-              </div>
-              <div className="truncate" style={{
-                fontFamily: 'var(--font-display)', fontSize: 14.5, fontWeight: 700,
-                lineHeight: 1.12, marginTop: 9, color: 'var(--ink)',
-              }}>
-                {p.title}
-              </div>
-              <div className="truncate" style={{
-                fontSize: 12, color: 'var(--ink-50)', marginTop: 1, fontFamily: 'var(--font-body)',
-              }}>
-                {p.inspiredBy ? `✨ Inspirat en ${p.inspiredBy}` : `${p.artist} · ${p.year}`}
-              </div>
-            </button>
-          ))}
+        {/* Fletxes nav (amples per tocar) */}
+        {total > 1 && (
+          <>
+            <button onClick={prev}
+              style={{
+                position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+                width: 56, height: 120, background: 'transparent', border: 'none',
+                color: 'rgba(255,255,255,0.6)', fontSize: 32, cursor: 'pointer',
+              }}>‹</button>
+            <button onClick={next}
+              style={{
+                position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
+                width: 56, height: 120, background: 'transparent', border: 'none',
+                color: 'rgba(255,255,255,0.6)', fontSize: 32, cursor: 'pointer',
+              }}>›</button>
+          </>
+        )}
+      </div>
+
+      {/* Header de la regió */}
+      <div className="relative flex items-center gap-3 px-5 shrink-0"
+        style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, fontSize: 20,
+          background: `color-mix(in srgb, ${hex} 18%, rgba(255,255,255,0.15))`,
+          border: `1px solid color-mix(in srgb, ${hex} 35%, rgba(255,255,255,0.2))`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {region.emoji}
         </div>
+        <div style={{ color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>
+          {region.label}
+          <span style={{ fontWeight: 400, fontSize: 13, opacity: 0.6, marginLeft: 8 }}>
+            {total} obres
+          </span>
+        </div>
+        <button onClick={onClose} style={{
+          marginLeft: 'auto', width: 34, height: 34, borderRadius: 17, border: 'none',
+          background: 'rgba(255,255,255,0.12)', color: 'white', fontSize: 20, cursor: 'pointer',
+        }}>×</button>
       </div>
     </div>
   )
 }
+// Import React for useRef/useState/useEffect in the function component above
+import React from 'react'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 20   // permet fer molt de zoom
@@ -704,7 +782,7 @@ export default function WorldMap() {
         })}
       </div>
 
-      <PickerSheet
+      <NetflixCarousel
         region={region}
         paintingMap={paintingMap}
         onClose={() => setRegion(null)}

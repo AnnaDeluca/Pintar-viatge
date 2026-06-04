@@ -30,15 +30,6 @@ const MODES = [
     bg: 'linear-gradient(135deg,#dff5ec,#c4edd8)',
     border: '#96d9b8',
   },
-  {
-    href: '/les-meves-obres',
-    emoji: '🖼️',
-    title: 'Les Meves Obres',
-    sub: 'Les teves creacions',
-    color: '#7C5C9E',
-    bg: 'linear-gradient(135deg,#ede4f7,#dccff0)',
-    border: '#c4a8e0',
-  },
 ]
 
 export default function LandingPage() {
