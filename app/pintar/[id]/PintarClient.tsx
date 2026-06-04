@@ -161,7 +161,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
   const [trayOpen, setTrayOpen] = useState(true)
-  const [showModel, setShowModel] = useState(false)  // amagat per defecte — més espai al canvas
+  const [showModel, setShowModel] = useState(false)
+  const [showExtraColors, setShowExtraColors] = useState(false)  // fila extra amagada per defecte
   const [showMuseum, setShowMuseum] = useState(false)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
@@ -631,7 +632,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             )}
           </div>
 
-          {/* Dabs — primera fila: paleta del quadre */}
+          {/* Dabs — primera fila: paleta del quadre + botó expandir */}
           <div className="flex items-center overflow-x-auto"
             style={{ gap: 7, padding: '2px 12px 0', scrollbarWidth: 'none' }}>
             <EraserDab selected={isErasing} onSelect={() => setSelectedColor('#FFFFFF')} />
@@ -641,11 +642,23 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
                 selected={!isErasing && selectedColor.toUpperCase() === c}
                 onSelect={() => setSelectedColor(c)} />
             ))}
+            {/* Botó expandir més colors */}
+            <button onClick={() => setShowExtraColors(v => !v)}
+              className="shrink-0 flex items-center justify-center active:scale-90 transition-all"
+              style={{
+                width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: showExtraColors ? 'rgba(74,58,32,0.18)' : 'rgba(74,58,32,0.08)',
+                fontSize: 16, color: 'rgba(74,58,32,0.7)',
+                boxShadow: showExtraColors ? 'inset 0 1px 3px rgba(0,0,0,0.12)' : '0 2px 5px rgba(60,40,20,0.15)',
+              }}>
+              {showExtraColors ? '▴' : '▾'}
+            </button>
           </div>
 
-          {/* Segona fila: més colors + picker lliure */}
+          {/* Segona fila: més colors — amagada per defecte */}
+          {showExtraColors && (
           <div className="flex items-center overflow-x-auto"
-            style={{ gap: 7, padding: '6px 12px 0', scrollbarWidth: 'none' }}>
+            style={{ gap: 7, padding: '4px 12px 0', scrollbarWidth: 'none' }}>
             {/* Etiqueta */}
             <span style={{
               fontSize: 9, fontWeight: 800, color: 'rgba(74,58,32,0.5)',
@@ -683,6 +696,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             {/* Color lliure (rainbow dab) */}
             <RainbowDab value={selectedColor} onChange={setSelectedColor} />
           </div>
+          )}
         </div>
       )}
 
