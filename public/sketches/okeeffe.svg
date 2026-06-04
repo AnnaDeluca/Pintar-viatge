@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+  <rect width="600" height="600" fill="white"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(0 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(45 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(90 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(135 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(180 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(225 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(270 300 300)"/>
+  <ellipse cx="300" cy="90"  rx="85" ry="160" fill="none" stroke="#1A1A1A" stroke-width="3" transform="rotate(315 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(22 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(67 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(112 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(157 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(202 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(247 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(292 300 300)"/>
+  <ellipse cx="300" cy="160" rx="55" ry="105" fill="none" stroke="#1A1A1A" stroke-width="2.5" transform="rotate(337 300 300)"/>
+  <circle cx="300" cy="300" r="65" fill="none" stroke="#1A1A1A" stroke-width="4"/>
+  <circle cx="300" cy="300" r="40" fill="none" stroke="#1A1A1A" stroke-width="3"/>
+</svg>

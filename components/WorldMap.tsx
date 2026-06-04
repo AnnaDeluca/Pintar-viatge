@@ -27,7 +27,7 @@ const HIGHLIGHT: Record<number, keyof typeof TONE_HEX> = {
   724: 'terracotta', // Espanya
   392: 'prussian',   // Japó
   710: 'viridian',   // Sud-àfrica
-  840: 'ochre',      // EUA
+  840: 'ochre',      // EUA (general)
   826: 'ochre',      // Regne Unit (Sargent)
   356: 'plum',       // Índia (Varma)
   858: 'ochre',      // Uruguai (Figari)
@@ -55,7 +55,8 @@ const PAINTING_COLOR: Record<string, string> = {
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
   varma:'#7C5C9E', figari:'#E0A52E', torres:'#D85B3C', abaporu:'#4CC9F0',
   nebamun:'#E0A52E', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
-  popart:'#FF6B6B',
+  popart:'#FF6B6B', wood:'#57CC99',
+  okeeffe:'#FF6B6B', lichtenstein:'#FFFF00', basquiat:'#F6C90E',
 }
 
 const REGIONS: Region[] = [
@@ -78,7 +79,7 @@ const REGIONS: Region[] = [
   {
     id: 'america', label: 'Amèrica del Nord', emoji: '🌾',
     coords: [-85, 40], tone: 'ochre',
-    paintingIds: ['homer','sargent','popart'],
+    paintingIds: ['wood','homer','sargent','okeeffe','lichtenstein','basquiat','popart'],
   },
   {
     id: 'india', label: 'Índia', emoji: '🪭',
