@@ -161,7 +161,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
   const [trayOpen, setTrayOpen] = useState(true)
-  const [showModel, setShowModel] = useState(true)   // mostrar/amagar la referència
+  const [showModel, setShowModel] = useState(false)  // amagat per defecte — més espai al canvas
   const [showMuseum, setShowMuseum] = useState(false)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
@@ -631,17 +631,57 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             )}
           </div>
 
-          {/* Dabs — scroll horitzontal per estalviar alçada */}
+          {/* Dabs — primera fila: paleta del quadre */}
           <div className="flex items-center overflow-x-auto"
-            style={{ gap: 8, padding: '2px 12px 0', scrollbarWidth: 'none' }}>
+            style={{ gap: 7, padding: '2px 12px 0', scrollbarWidth: 'none' }}>
             <EraserDab selected={isErasing} onSelect={() => setSelectedColor('#FFFFFF')} />
-            <RainbowDab value={selectedColor} onChange={setSelectedColor} />
-            <span style={{ width: 1, height: 30, background: 'rgba(74,58,32,0.16)', alignSelf: 'center', flexShrink: 0 }} />
+            <span style={{ width: 1, height: 28, background: 'rgba(74,58,32,0.16)', alignSelf: 'center', flexShrink: 0 }} />
             {artColors.map(c => (
               <PaintDab key={c} color={c}
                 selected={!isErasing && selectedColor.toUpperCase() === c}
                 onSelect={() => setSelectedColor(c)} />
             ))}
+          </div>
+
+          {/* Segona fila: més colors + picker lliure */}
+          <div className="flex items-center overflow-x-auto"
+            style={{ gap: 7, padding: '6px 12px 0', scrollbarWidth: 'none' }}>
+            {/* Etiqueta */}
+            <span style={{
+              fontSize: 9, fontWeight: 800, color: 'rgba(74,58,32,0.5)',
+              letterSpacing: '0.08em', flexShrink: 0, whiteSpace: 'nowrap',
+              fontFamily: 'var(--font-body)',
+            }}>
+              MÉS:
+            </span>
+            {/* Colors addicionals organitzats */}
+            {[
+              '#FF0000','#FF6B6B','#FF8C00','#FFD700',
+              '#00CC44','#00AAFF','#8800FF','#FF00CC',
+              '#FFFFFF','#CCCCCC','#888888','#333333','#000000',
+              '#8B4513','#D2691E','#F5DEB3',
+            ].map(c => {
+              const sel = !isErasing && selectedColor.toUpperCase() === c.toUpperCase()
+              return (
+                <button key={c} onClick={() => setSelectedColor(c)}
+                  className="shrink-0"
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
+                    background: `radial-gradient(circle at 33% 27%, color-mix(in srgb, ${c} 60%, #fff) 0%, ${c} 50%, color-mix(in srgb, ${c} 74%, #000) 100%)`,
+                    outline: sel ? `3px solid rgba(74,58,32,0.6)` : 'none',
+                    outlineOffset: 2,
+                    transform: sel ? 'scale(1.2) translateY(-4px)' : 'scale(1)',
+                    boxShadow: sel
+                      ? '0 0 0 2px #fffdf8, 0 6px 14px rgba(60,40,20,0.4)'
+                      : '0 3px 7px rgba(60,40,20,0.25), inset -1px -2px 3px rgba(0,0,0,0.2), inset 1px 2px 3px rgba(255,255,255,0.5)',
+                    transition: 'transform .12s cubic-bezier(.22,1,.36,1)',
+                  }} />
+              )
+            })}
+            {/* Separator */}
+            <span style={{ width: 1, height: 28, background: 'rgba(74,58,32,0.16)', alignSelf: 'center', flexShrink: 0 }} />
+            {/* Color lliure (rainbow dab) */}
+            <RainbowDab value={selectedColor} onChange={setSelectedColor} />
           </div>
         </div>
       )}
