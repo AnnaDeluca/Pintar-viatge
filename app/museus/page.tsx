@@ -96,36 +96,68 @@ export default function MuseusPage() {
     return () => { alive = false }
   }, [dims.w, dims.h])
 
-  // Drag
-  const dragRef = useRef<{ sx: number; sy: number; px: number; py: number } | null>(null)
+  // Drag + pinch — mateixa implementació que WorldMap
   const ptrs = useRef(new Map<number, { x: number; y: number }>())
+  const dragRef = useRef<{ sx: number; sy: number; px: number; py: number } | null>(null)
+  const pinchRef = useRef<{ dist: number; midSvgX: number; midSvgY: number } | null>(null)
+
+  const screenToSvg = useCallback((cx: number, cy: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return { x: cx, y: cy }
+    return { x: (cx - rect.left) * (dims.w / rect.width), y: (cy - rect.top) * (dims.h / rect.height) }
+  }, [dims])
+
   const onDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (ptrs.current.size === 1) dragRef.current = { sx: e.clientX, sy: e.clientY, px: panRef.current.x, py: panRef.current.y }
-  }, [])
+    if (ptrs.current.size === 1) {
+      dragRef.current = { sx: e.clientX, sy: e.clientY, px: panRef.current.x, py: panRef.current.y }
+      pinchRef.current = null
+    } else if (ptrs.current.size === 2) {
+      dragRef.current = null
+      const pts = Array.from(ptrs.current.values())
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const mid = screenToSvg((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2)
+      const z = zoomRef.current, p = panRef.current
+      pinchRef.current = { dist, midSvgX: (mid.x - p.x) / z, midSvgY: (mid.y - p.y) / z }
+    }
+  }, [screenToSvg])
+
   const onMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (!ptrs.current.has(e.pointerId)) return
+    e.preventDefault()
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (ptrs.current.size === 1 && dragRef.current) {
       setView(zoomRef.current, { x: dragRef.current.px + e.clientX - dragRef.current.sx, y: dragRef.current.py + e.clientY - dragRef.current.sy })
+    } else if (ptrs.current.size === 2 && pinchRef.current) {
+      const pts = Array.from(ptrs.current.values())
+      const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const scale = newDist / pinchRef.current.dist
+      const mid = screenToSvg((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2)
+      const newZ = Math.min(10, Math.max(1, zoomRef.current * scale))
+      setView(newZ, { x: mid.x - pinchRef.current.midSvgX * newZ, y: mid.y - pinchRef.current.midSvgY * newZ })
+      pinchRef.current.dist = newDist
     }
-  }, [setView])
-  const onUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => { ptrs.current.delete(e.pointerId) }, [])
+  }, [screenToSvg, setView])
 
-  const zoomIn = () => {
-    const z = zoomRef.current * 1.6, p = panRef.current
+  const onUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    ptrs.current.delete(e.pointerId)
+    if (ptrs.current.size < 2) pinchRef.current = null
+    if (ptrs.current.size === 0) dragRef.current = null
+  }, [])
+
+  const zoomAround = useCallback((factor: number) => {
+    const z = zoomRef.current, p = panRef.current
     const cx = dims.w / 2, cy = dims.h / 2
-    const sx = (cx - p.x) / zoomRef.current, sy = (cy - p.y) / zoomRef.current
-    setView(z, { x: cx - sx * z, y: cy - sy * z })
-  }
-  const zoomOut = () => {
-    const z = zoomRef.current / 1.6, p = panRef.current
-    if (z <= 1) { setView(1, { x: 0, y: 0 }); return }
-    const cx = dims.w / 2, cy = dims.h / 2
-    const sx = (cx - p.x) / zoomRef.current, sy = (cy - p.y) / zoomRef.current
-    setView(z, { x: cx - sx * z, y: cy - sy * z })
-  }
+    const svgCx = (cx - p.x) / z, svgCy = (cy - p.y) / z
+    const next = Math.min(10, Math.max(1, z * factor))
+    if (next <= 1) { setView(1, { x: 0, y: 0 }); return }
+    setView(next, { x: cx - svgCx * next, y: cy - svgCy * next })
+  }, [dims, setView])
+
+  const zoomIn = () => zoomAround(1.6)
+  const zoomOut = () => zoomAround(1 / 1.6)
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
