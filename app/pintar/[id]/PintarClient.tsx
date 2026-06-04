@@ -87,6 +87,80 @@ function EraserDab({ selected, onSelect }: { selected: boolean; onSelect: () => 
   )
 }
 
+// Strip de l'arc de Sant Martí — toca o arrossega per triar el color
+function RainbowStrip({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [indicator, setIndicator] = useState<number | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')!
+    const W = canvas.width, H = canvas.height
+
+    // Arc de Sant Martí: tota l'espectre + blancs i negres
+    const grad = ctx.createLinearGradient(0, 0, W, 0)
+    const stops = [
+      [0,    '#FF0000'], [1/12, '#FF4400'], [2/12, '#FF8800'],
+      [3/12, '#FFCC00'], [4/12, '#FFFF00'], [5/12, '#88FF00'],
+      [6/12, '#00FF44'], [7/12, '#00FFCC'], [8/12, '#00AAFF'],
+      [9/12, '#0044FF'], [10/12,'#6600FF'], [11/12,'#CC00FF'],
+      [1,    '#FF0088'],
+    ] as const
+    stops.forEach(([pos, c]) => grad.addColorStop(pos, c))
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, W, H * 0.72)
+
+    // Franja neutra: blanc → gris → negre
+    const grad2 = ctx.createLinearGradient(0, 0, W, 0)
+    grad2.addColorStop(0,    '#FFFFFF')
+    grad2.addColorStop(0.35, '#CCCCCC')
+    grad2.addColorStop(0.65, '#666666')
+    grad2.addColorStop(1,    '#000000')
+    ctx.fillStyle = grad2
+    ctx.fillRect(0, H * 0.76, W, H * 0.24)
+  }, [])
+
+  const pick = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const x = Math.max(0, Math.min(canvas.width - 1,
+      Math.floor((e.clientX - rect.left) * (canvas.width / rect.width))))
+    const y = Math.max(0, Math.min(canvas.height - 1,
+      Math.floor((e.clientY - rect.top) * (canvas.height / rect.height))))
+    const [r, g, b] = canvas.getContext('2d')!.getImageData(x, y, 1, 1).data
+    const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
+    onChange(hex)
+    setIndicator(x / canvas.width)
+  }
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <canvas ref={canvasRef} width={512} height={56}
+        style={{
+          width: '100%', height: 56, borderRadius: 14,
+          touchAction: 'none', cursor: 'crosshair', display: 'block',
+          boxShadow: '0 3px 10px rgba(60,40,20,0.25)',
+        }}
+        onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); pick(e) }}
+        onPointerMove={e => { if (e.buttons) pick(e) }}
+      />
+      {/* Indicador de posició */}
+      {indicator !== null && (
+        <div style={{
+          position: 'absolute', top: -4, bottom: -4,
+          left: `calc(${indicator * 100}% - 3px)`,
+          width: 6, borderRadius: 3,
+          background: 'white',
+          boxShadow: '0 0 0 2px rgba(0,0,0,0.4)',
+          pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  )
+}
+
 // Dab amb input type=color al damunt — selector lliure de qualsevol color
 function RainbowDab({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   return (
@@ -655,47 +729,11 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             </button>
           </div>
 
-          {/* Segona fila: més colors — amagada per defecte */}
+          {/* Arc de Sant Martí — amagat per defecte, expandible */}
           {showExtraColors && (
-          <div className="flex items-center overflow-x-auto"
-            style={{ gap: 7, padding: '4px 12px 0', scrollbarWidth: 'none' }}>
-            {/* Etiqueta */}
-            <span style={{
-              fontSize: 9, fontWeight: 800, color: 'rgba(74,58,32,0.5)',
-              letterSpacing: '0.08em', flexShrink: 0, whiteSpace: 'nowrap',
-              fontFamily: 'var(--font-body)',
-            }}>
-              MÉS:
-            </span>
-            {/* Colors addicionals organitzats */}
-            {[
-              '#FF0000','#FF6B6B','#FF8C00','#FFD700',
-              '#00CC44','#00AAFF','#8800FF','#FF00CC',
-              '#FFFFFF','#CCCCCC','#888888','#333333','#000000',
-              '#8B4513','#D2691E','#F5DEB3',
-            ].map(c => {
-              const sel = !isErasing && selectedColor.toUpperCase() === c.toUpperCase()
-              return (
-                <button key={c} onClick={() => setSelectedColor(c)}
-                  className="shrink-0"
-                  style={{
-                    width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer', padding: 0,
-                    background: `radial-gradient(circle at 33% 27%, color-mix(in srgb, ${c} 60%, #fff) 0%, ${c} 50%, color-mix(in srgb, ${c} 74%, #000) 100%)`,
-                    outline: sel ? `3px solid rgba(74,58,32,0.6)` : 'none',
-                    outlineOffset: 2,
-                    transform: sel ? 'scale(1.2) translateY(-4px)' : 'scale(1)',
-                    boxShadow: sel
-                      ? '0 0 0 2px #fffdf8, 0 6px 14px rgba(60,40,20,0.4)'
-                      : '0 3px 7px rgba(60,40,20,0.25), inset -1px -2px 3px rgba(0,0,0,0.2), inset 1px 2px 3px rgba(255,255,255,0.5)',
-                    transition: 'transform .12s cubic-bezier(.22,1,.36,1)',
-                  }} />
-              )
-            })}
-            {/* Separator */}
-            <span style={{ width: 1, height: 28, background: 'rgba(74,58,32,0.16)', alignSelf: 'center', flexShrink: 0 }} />
-            {/* Color lliure (rainbow dab) */}
-            <RainbowDab value={selectedColor} onChange={setSelectedColor} />
-          </div>
+            <div style={{ padding: '6px 12px 2px' }}>
+              <RainbowStrip value={selectedColor} onChange={setSelectedColor} />
+            </div>
           )}
         </div>
       )}
