@@ -160,7 +160,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
-  const [trayOpen, setTrayOpen] = useState(true)  // safata oberta inicialment
+  const [trayOpen, setTrayOpen] = useState(true)
+  const [showModel, setShowModel] = useState(true)   // mostrar/amagar la referència
   const [showMuseum, setShowMuseum] = useState(false)
   const [dots, setDots] = useState<Dot[]>([])
   const [showOriginal, setShowOriginal] = useState(false)
@@ -202,6 +203,24 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
     setArtworkName('')
     setChildName('')
     setShowSaveModal(true)
+  }
+
+  const handlePrint = () => {
+    const dataUrl = isDots ? null : canvasRef.current?.exportPng()
+    if (!dataUrl) return
+    const win = window.open('', '_blank')
+    if (!win) return
+    const name = childName.trim() || 'Artista'
+    const title = painting.title
+    win.document.write(`<!DOCTYPE html><html><head><title>${name} - ${title}</title>
+      <style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:white;font-family:Arial,sans-serif}
+      img{max-width:90vw;max-height:80vh;object-fit:contain;border:1px solid #ddd}
+      p{margin:12px 0 4px;font-size:18px;font-weight:800;letter-spacing:0.1em}
+      small{font-size:13px;color:#888}
+      @media print{body{min-height:auto}}</style></head>
+      <body><img src="${dataUrl}" onload="setTimeout(()=>{window.print()},300)">
+      <p>${name.toUpperCase()}</p><small>${title} — Pintat per a Pintem Junts!</small></body></html>`)
+    win.document.close()
   }
 
   const handleSaveAndCelebrate = () => {
@@ -281,6 +300,19 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         >
           ↶
         </button>
+        {painting.imageUrl && !isDots && (
+          <button onClick={() => setShowModel(v => !v)} aria-label={showModel ? 'Amaga model' : 'Mostra model'}
+            className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-all"
+            style={{
+              width: 36, height: 36, borderRadius: 12, fontSize: 14,
+              border: '1px solid rgba(255,255,255,0.14)',
+              background: showModel ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(6px)',
+              opacity: showModel ? 1 : 0.5,
+            }}>
+            {showModel ? '👁️' : '🙈'}
+          </button>
+        )}
         <StudioBtn onClick={handleClear} ariaLabel="Esborrar tot">🗑️</StudioBtn>
       </header>
 
@@ -407,8 +439,8 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           )}
         </div>
 
-        {/* Model — referència original (petit; tap per veure'l gran) */}
-        {painting.imageUrl && !isDots && (
+        {/* Model — referència original (ocultable) */}
+        {painting.imageUrl && !isDots && showModel && (
           <div className="flex flex-col items-center gap-1 shrink-0"
             style={{ width: 'clamp(52px, 9vw, 90px)' }}>
             <span style={{
@@ -670,6 +702,18 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               }}>
               Seguir pintant
             </button>
+            {/* Imprimir */}
+            {!isDots && (
+              <button onClick={handlePrint}
+                style={{
+                  padding: '10px 20px', borderRadius: 999, border: 'none',
+                  background: 'rgba(35,50,62,0.08)', color: 'var(--ink-70)',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                🖨️ Imprimir
+              </button>
+            )}
             {savedOk && (
               <Link href="/les-meves-obres"
                 style={{
