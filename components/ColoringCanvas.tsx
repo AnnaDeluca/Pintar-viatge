@@ -259,7 +259,17 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         }
 
         if (useSketch) {
-          // Carrega l'SVG i el renderitza al canvas edge
+          // Primer construïm la màscara del flood fill des de la imatge original
+          // (millor que usar el sketch perquè el sketch pot tenir àrees massa clares)
+          try {
+            const mc = document.createElement('canvas')
+            mc.width = W; mc.height = H
+            const mctx = mc.getContext('2d')!
+            mctx.drawImage(img, 0, 0, W, H)
+            maskData.current = new Uint8ClampedArray(mctx.getImageData(0, 0, W, H).data)
+          } catch {}
+
+          // Carrega el sketch (PNG o SVG) i el renderitza al canvas edge
           const sketchImg = new Image()
           sketchImg.crossOrigin = 'anonymous'
           sketchImg.onload = () => {
@@ -269,10 +279,6 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
               const ec = edge.getContext('2d')!
               ec.clearRect(0, 0, W, H)
               ec.drawImage(sketchImg, 0, 0, W, H)
-              // El mateix canvas edge serveix com a màscara per al flood fill:
-              // píxels foscos = línies (parets), píxels clars = espai pintable
-              const maskSrc = ec.getImageData(0, 0, W, H)
-              maskData.current = new Uint8ClampedArray(maskSrc.data)
             } catch {
               fillWhite()
             }

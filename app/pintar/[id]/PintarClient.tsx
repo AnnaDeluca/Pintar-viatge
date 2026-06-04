@@ -7,6 +7,15 @@ import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } 
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 import { saveArtwork } from '@/lib/artworks'
 
+// Obres originals creades com a SVG (no tenen foto de base per al pencil sketch)
+const SVG_ONLY = new Set(['popart','abaporu','okeeffe','lichtenstein','basquiat','tessellation'])
+
+// Tria l'URL del sketch correcte: PNG (pencil sketch) per a pintures reals,
+// SVG per a obres originals creades per a l'app
+function sketchUrl(id: string): string {
+  return SVG_ONLY.has(id) ? `/sketches/${id}.svg` : `/sketches/${id}.png`
+}
+
 // Colors extres per omplir paleta si el quadre en té pocs
 const EXTRA_COLORS = ['#1A1A1A','#E63946','#F6C90E','#2E6A9E','#3FA34D','#F4A261']
 
@@ -368,7 +377,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
             <ColoringCanvas
               ref={canvasRef}
               imageUrl={customImageUrl || painting.imageUrl}
-              sketchUrl={customImageUrl ? undefined : `/sketches/${painting.id}.svg`}
+              sketchUrl={customImageUrl ? undefined : sketchUrl(painting.id)}
               selectedColor={selectedColor}
               tool={tool}
               brushSize={brushSize}
