@@ -256,7 +256,7 @@ function PickerSheet({ region, paintingMap, onClose, onPick }: PickerProps) {
               <div className="truncate" style={{
                 fontSize: 12, color: 'var(--ink-50)', marginTop: 1, fontFamily: 'var(--font-body)',
               }}>
-                {p.artist} · {p.year}
+                {p.inspiredBy ? `✨ Inspirat en ${p.inspiredBy}` : `${p.artist} · ${p.year}`}
               </div>
             </button>
           ))}

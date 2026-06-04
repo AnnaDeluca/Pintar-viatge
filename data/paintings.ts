@@ -22,6 +22,8 @@ export interface PaintingMeta {
   thumbUrl?: string
   coords?: [number, number]
   museum?: Museum
+  /** Obra original creada per a l'app, inspirada en l'estil d'un artista */
+  inspiredBy?: string
 }
 
 export const paintings: PaintingMeta[] = [
@@ -366,58 +368,63 @@ export const paintings: PaintingMeta[] = [
   // ── Pop Art i estils propis ────────────────────────────────────
   {
     id: 'okeeffe',
-    title: 'Flor gegant (inspirat en O\'Keeffe)',
-    artist: 'Art original, inspirat en Georgia O\'Keeffe',
+    title: 'La gran flor',
+    artist: 'Obra original creada per a l\'app',
     year: 2024, country: 'EUA', flag: '🇺🇸', emoji: '🌸',
     funFact: 'Georgia O\'Keeffe pintava flors TAN GRANS que omplien tota la tela! Deia que volia que la gent realment s\'aturés a mirar les flors, en lloc de passar-hi de llarg. Aquí tens 16 pètals per omplir de colors!',
     palette: ['#FF6B6B','#F093FB','#FF8C42','#F06292','#FF9999','#F5A0C0','#F6C90E','#E0A52E'],
     regions: [],
     imageUrl: '/paintings/okeeffe.jpg', thumbUrl: '/paintings/okeeffe-thumb.jpg',
     coords: [-106.0, 36.0],
+    inspiredBy: 'Georgia O\'Keeffe',
   },
   {
     id: 'lichtenstein',
-    title: 'Pop! (inspirat en Lichtenstein)',
-    artist: 'Art original, inspirat en Roy Lichtenstein',
+    title: 'Pop!',
+    artist: 'Obra original creada per a l\'app',
     year: 2024, country: 'EUA', flag: '🇺🇸', emoji: '💬',
     funFact: 'Roy Lichtenstein agafava dibuixos de còmics i els feia ENORMES, com si fossin obres d\'art serioses. Pinta els cercles del fons i la cara amb colors molt vius, com un còmic dels anys 60!',
     palette: ['#FFFF88','#FFD700','#FF6B6B','#2364AA','#1A1A1A','#FFDAB9','#E63946','#FFFFFF'],
     regions: [],
     imageUrl: '/paintings/lichtenstein.jpg', thumbUrl: '/paintings/lichtenstein-thumb.jpg',
     coords: [-74.0, 40.75],
+    inspiredBy: 'Roy Lichtenstein',
   },
   {
     id: 'basquiat',
-    title: 'Corona (inspirat en Basquiat)',
-    artist: 'Art original, inspirat en Jean-Michel Basquiat',
+    title: 'La corona',
+    artist: 'Obra original creada per a l\'app',
     year: 2024, country: 'EUA', flag: '🇺🇸', emoji: '👑',
     funFact: 'Basquiat era fill d\'haitians i portoriquenys i va créixer a Brooklyn. De jove pintava graffitis pels carrers de Nova York amb el nom "SAMO©". La corona era el seu símbol preferit — per ell representava el poder i l\'art.',
     palette: ['#F5E6C8','#E63946','#F6C90E','#4CC9F0','#57CC99','#3A2A1A','#8B5CF6','#F093FB'],
     regions: [],
     imageUrl: '/paintings/basquiat.jpg', thumbUrl: '/paintings/basquiat-thumb.jpg',
     coords: [-73.9, 40.65],
+    inspiredBy: 'Jean-Michel Basquiat',
   },
   {
     id: 'popart',
-    title: 'Pop Art! (estil Warhol)',
-    artist: 'Art original, inspirat en Warhol',
+    title: 'Pop Art!',
+    artist: 'Obra original creada per a l\'app',
     year: 2024, country: 'EUA', flag: '🇺🇸', emoji: '⭐',
     funFact: 'Andy Warhol agafava cares famoses i les repetia en graelles de molts colors. Deia que qualsevol cosa podia ser art: una llauna de sopa, un dòlar, una estrella de cinema. Aquí tens 4 cares iguals per pintar diferent!',
     palette: ['#FF6B6B','#F6C90E','#4CC9F0','#57CC99','#F093FB','#E63946','#8B5CF6','#1A1A1A'],
     regions: [],
     imageUrl: '/paintings/popart.jpg', thumbUrl: '/paintings/popart-thumb.jpg',
     coords: [-74.0, 40.7],
+    inspiredBy: 'Andy Warhol',
   },
   {
     id: 'abaporu',
-    title: 'Abaporu (inspirat en Tarsila)',
-    artist: 'Art original, inspirat en Tarsila do Amaral',
+    title: 'L\'home del peu gegant',
+    artist: 'Obra original creada per a l\'app',
     year: 2024, country: 'Brasil', flag: '🇧🇷', emoji: '🦶',
     funFact: 'L\'Abaporu original de Tarsila do Amaral té la figura humana amb el peu gegant. "Abaporu" en tupi vol dir "l\'home que menja gent"! Aquí tens una versió pròpia per pintar amb colors tropicals.',
     palette: ['#4CC9F0','#57CC99','#F6C90E','#F4A261','#C4956A','#2E8B57','#87CEEB','#E63946'],
     regions: [],
     imageUrl: '/paintings/abaporu.jpg', thumbUrl: '/paintings/abaporu-thumb.jpg',
     coords: [-46.6, -23.5],
+    inspiredBy: 'Tarsila do Amaral',
   },
   // ── Matemàtiques i patrons ─────────────────────────────────────
   {

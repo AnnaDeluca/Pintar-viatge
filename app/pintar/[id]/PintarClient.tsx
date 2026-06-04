@@ -275,6 +275,24 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         <StudioBtn onClick={handleClear} ariaLabel="Esborrar tot">🗑️</StudioBtn>
       </header>
 
+      {/* Badge "Inspirat en" — visible si l'obra és original creada per a l'app */}
+      {painting.inspiredBy && (
+        <div className="mx-3 mt-0.5 shrink-0 flex items-center gap-2 px-3 py-1.5"
+          style={{
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.18)',
+          }}>
+          <span style={{ fontSize: 13 }}>✨</span>
+          <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-body)', fontWeight: 700 }}>
+            INSPIRAT EN {painting.inspiredBy.toUpperCase()}
+          </span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-body)' }}>
+            · Obra original creada per a l&apos;app
+          </span>
+        </div>
+      )}
+
       {/* Fun fact */}
       {showFact && (
         <div className="mx-4 mt-0.5 shrink-0"
