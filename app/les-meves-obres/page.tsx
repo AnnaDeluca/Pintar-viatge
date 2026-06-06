@@ -156,9 +156,11 @@ export default function MyArtworksPage() {
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>
               {active.childName} · {formatDate(active.date)}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-              Inspirat en {active.paintingTitle} de {active.artist}
-            </div>
+            {active.paintingId !== 'la-meva-foto' && (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                Inspirat en {active.paintingTitle} de {active.artist}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3" style={{ marginTop: 18 }} onClick={e => e.stopPropagation()}>
