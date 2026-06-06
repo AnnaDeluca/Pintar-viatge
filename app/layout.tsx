@@ -18,6 +18,21 @@ const body = Nunito({
 export const metadata: Metadata = {
   title: '🎨 Pintem junts!',
   description: 'Pinta quadres d\'artistes famosos en un viatge pel món i el temps',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Pintem!',
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
+  openGraph: {
+    title: '🎨 Pintem junts!',
+    description: 'Pinta quadres d\'artistes famosos en un viatge pel món i el temps',
+    type: 'website',
+  },
 }
 
 export const viewport: Viewport = {
@@ -25,6 +40,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#D85B3C',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

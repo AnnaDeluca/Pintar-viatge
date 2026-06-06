@@ -1,0 +1,26 @@
+{
+  "name": "Pintem Junts!",
+  "short_name": "Pintem!",
+  "description": "Pinta quadres d'artistes famosos en un viatge pel món i el temps",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5EAD4",
+  "theme_color": "#D85B3C",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["education", "kids"],
+  "lang": "ca"
+}
