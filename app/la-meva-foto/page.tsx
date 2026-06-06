@@ -6,10 +6,11 @@ import { saveArtwork } from '@/lib/artworks'
 
 const ACCENT = '#4E8C6A'
 
-// Adaptive threshold sketch — port de l'algoritme OpenCV:
-//   medianBlur(5) + adaptiveThreshold(GAUSSIAN_C, blockSize=11, C=4)
-// Resultat: blanc (fons) + negre (vores) — ideal per pintar per sobre
-async function applyPencilSketch(file: File): Promise<string> {
+// HF Space per a photo-to-sketch via IA
+const HF_SPACE = 'radames/sketcher'
+
+// Fallback local: adaptive threshold (blanc + negres vores)
+function applyLocalSketch(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -20,7 +21,6 @@ async function applyPencilSketch(file: File): Promise<string> {
       const W = Math.round(img.width * scale)
       const H = Math.round(img.height * scale)
 
-      // Grisos originals (sense blur)
       const cGray = document.createElement('canvas')
       cGray.width = W; cGray.height = H
       const ctxG = cGray.getContext('2d')!
@@ -28,8 +28,6 @@ async function applyPencilSketch(file: File): Promise<string> {
       ctxG.drawImage(img, 0, 0, W, H)
       const grayData = ctxG.getImageData(0, 0, W, H).data
 
-      // Blur gaussià (≈ medianBlur + mitja local per adaptive threshold)
-      // blur(5px) = σ=5 → radi efectiu ~15px ≈ blockSize=11 d'OpenCV
       const cBlur = document.createElement('canvas')
       cBlur.width = W; cBlur.height = H
       const ctxB = cBlur.getContext('2d')!
@@ -37,15 +35,14 @@ async function applyPencilSketch(file: File): Promise<string> {
       ctxB.drawImage(img, 0, 0, W, H)
       const blurData = ctxB.getImageData(0, 0, W, H).data
 
-      // Adaptive threshold: negre si gris < mitja_local - C
       const C = 4
       const out = document.createElement('canvas')
       out.width = W; out.height = H
       const ctxO = out.getContext('2d')!
       const result = ctxO.createImageData(W, H)
       for (let i = 0; i < W * H; i++) {
-        const g    = grayData[i * 4]   // gris original
-        const mean = blurData[i * 4]   // mitja local gaussiana
+        const g    = grayData[i * 4]
+        const mean = blurData[i * 4]
         const val  = g < mean - C ? 0 : 255
         result.data[i * 4]     = val
         result.data[i * 4 + 1] = val
@@ -60,10 +57,42 @@ async function applyPencilSketch(file: File): Promise<string> {
   })
 }
 
+async function applyHuggingFaceSketch(file: File): Promise<string> {
+  const { Client } = await import('@gradio/client')
+  const client = await Client.connect(HF_SPACE)
+  const result = await client.predict('/predict', [file])
+  const data = result.data as unknown[]
+  const output = data[0]
+  if (output && typeof output === 'object' && 'url' in output) {
+    return (output as { url: string }).url
+  }
+  if (typeof output === 'string') return output
+  throw new Error('Format de resposta desconegut')
+}
+
+async function applyPencilSketch(
+  file: File,
+  onStatus?: (s: string) => void
+): Promise<string> {
+  try {
+    onStatus?.('Enviant a IA de Hugging Face...')
+    const url = await applyHuggingFaceSketch(file)
+    onStatus?.('✅ IA aplicada!')
+    return url
+  } catch (e) {
+    console.warn('HF Space failed, usant algoritme local:', e)
+    onStatus?.('IA no disponible — processant al dispositiu...')
+    const url = await applyLocalSketch(file)
+    onStatus?.('')
+    return url
+  }
+}
+
 export default function LaMemFotoPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [sketchUrl, setSketchUrl] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [processingStatus, setProcessingStatus] = useState('')
   const [tool, setTool] = useState<Tool>('fill')
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
@@ -82,7 +111,7 @@ export default function LaMemFotoPage() {
     try {
       const url = URL.createObjectURL(file)
       setPhotoUrl(url)
-      const sketch = await applyPencilSketch(file)
+      const sketch = await applyPencilSketch(file, setProcessingStatus)
       setSketchUrl(sketch)
     } catch (e) {
       console.error(e)
@@ -283,8 +312,8 @@ export default function LaMemFotoPage() {
         {processing ? (
           <div className="flex flex-col items-center gap-4">
             <div style={{ fontSize: 50, animation: 'bob 1s ease-in-out infinite' }}>🎨</div>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-body)', fontSize: 14 }}>
-              Convertint en dibuix per pintar...
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-body)', fontSize: 14, textAlign: 'center', maxWidth: 260 }}>
+              {processingStatus || 'Convertint en dibuix per pintar...'}
             </p>
           </div>
         ) : photoUrl && sketchUrl ? (
