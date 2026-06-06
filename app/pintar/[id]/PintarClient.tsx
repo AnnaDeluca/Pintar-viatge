@@ -7,13 +7,10 @@ import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } 
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 import { saveArtwork } from '@/lib/artworks'
 
-// Obres originals creades com a SVG (no tenen foto de base per al pencil sketch)
-const SVG_ONLY = new Set(['tessellation'])
-
-// Tria l'URL del sketch correcte: PNG (pencil sketch) per a pintures reals,
-// SVG per a obres originals creades per a l'app
+// Tots els quadres usen SVG (vector, millor qualitat).
+// Si no existeix (ex: renoir), ColoringCanvas fa fallback a posterize en temps real.
 function sketchUrl(id: string): string {
-  return SVG_ONLY.has(id) ? `/sketches/${id}.svg` : `/sketches/${id}.png`
+  return `/sketches/${id}.svg`
 }
 
 // Colors extres per omplir paleta si el quadre en té pocs
