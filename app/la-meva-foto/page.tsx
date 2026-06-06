@@ -67,6 +67,9 @@ export default function LaMemFotoPage() {
   const [selectedColor, setSelectedColor] = useState('#E63946')
   const [celebrate, setCelebrate] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [childName, setChildName] = useState('')
+  const [artworkName, setArtworkName] = useState('')
   const canvasRef = useRef<ColoringCanvasHandle>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -86,6 +89,10 @@ export default function LaMemFotoPage() {
   }, [])
 
   const handleFinish = useCallback(() => {
+    setShowSaveModal(true)
+  }, [])
+
+  const handleSaveAndCelebrate = useCallback(() => {
     const dataUrl = canvasRef.current?.exportPng()
     if (dataUrl) {
       try {
@@ -94,8 +101,8 @@ export default function LaMemFotoPage() {
           paintingTitle: 'La meva foto',
           artist: 'Jo!',
           emoji: '📸',
-          childName: 'Artista',
-          artworkName: 'La meva foto pintada',
+          childName: childName.trim() || 'ARTISTA',
+          artworkName: artworkName.trim() || 'LA MEVA FOTO',
           dataUrl,
         })
         setSavedOk(true)
@@ -103,8 +110,9 @@ export default function LaMemFotoPage() {
         console.warn('Save failed', e)
       }
     }
+    setShowSaveModal(false)
     setCelebrate(true)
-  }, [])
+  }, [childName, artworkName])
 
   const QUICK_COLORS = ['#E63946','#F6C90E','#4CC9F0','#57CC99','#8B5CF6','#F4A261','#1A1A1A','#FFFFFF']
 
@@ -293,6 +301,80 @@ export default function LaMemFotoPage() {
           />
         ) : null}
       </div>
+
+      {/* Modal: posa nom a la teva obra */}
+      {showSaveModal && (
+        <div onClick={() => setShowSaveModal(false)}
+          className="fixed inset-0 flex items-end sm:items-center justify-center px-4"
+          style={{ background: 'rgba(20,26,34,0.55)', zIndex: 70, animation: 'fadeIn .2s ease' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 420,
+              background: 'var(--paper-2)',
+              borderTopLeftRadius: 30, borderTopRightRadius: 30,
+              borderBottomLeftRadius: 22, borderBottomRightRadius: 22,
+              padding: '24px 22px 28px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.3)',
+              animation: 'sheetUp .3s cubic-bezier(.22,1,.36,1)',
+            }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 38 }}>📸</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginTop: 4 }}>
+                Guardem la teva obra!
+              </div>
+            </div>
+            <label className="block" style={{ marginBottom: 14 }}>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'var(--ink-70)', letterSpacing: '0.08em', marginBottom: 6 }}>
+                Nom de l&apos;obra
+              </span>
+              <input type="text" value={artworkName}
+                onChange={e => setArtworkName(e.target.value.slice(0, 30))}
+                placeholder="LA MEVA FOTO" autoFocus
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 14,
+                  border: '2px solid var(--line)', background: 'white',
+                  fontSize: 16, fontWeight: 700, color: 'var(--ink)',
+                  fontFamily: 'var(--font-body)', textTransform: 'uppercase',
+                }}/>
+            </label>
+            <label className="block" style={{ marginBottom: 18 }}>
+              <span style={{ display: 'block', fontSize: 11, fontWeight: 800, color: 'var(--ink-70)', letterSpacing: '0.08em', marginBottom: 6 }}>
+                El teu nom
+              </span>
+              <input type="text" value={childName}
+                onChange={e => setChildName(e.target.value.slice(0, 20))}
+                placeholder="ARTISTA"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 14,
+                  border: '2px solid var(--line)', background: 'white',
+                  fontSize: 16, fontWeight: 700, color: 'var(--ink)',
+                  fontFamily: 'var(--font-body)', textTransform: 'uppercase',
+                }}/>
+            </label>
+            <div className="flex gap-2">
+              <button onClick={() => setShowSaveModal(false)}
+                style={{
+                  flex: 1, padding: '13px 0', borderRadius: 999, border: 'none',
+                  background: 'rgba(35,50,62,0.06)', color: 'var(--ink-70)',
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-display)',
+                }}>
+                Tornar
+              </button>
+              <button onClick={handleSaveAndCelebrate}
+                style={{
+                  flex: 2, padding: '13px 0', borderRadius: 999, border: 'none',
+                  background: ACCENT, color: 'white',
+                  fontSize: 14, fontWeight: 800, cursor: 'pointer',
+                  fontFamily: 'var(--font-display)',
+                  boxShadow: `0 6px 18px ${ACCENT}66`,
+                }}>
+                Guardar i celebrar! 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* He acabat — botó flotant */}
       {sketchUrl && !processing && (
