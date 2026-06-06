@@ -20,7 +20,7 @@ const REGIONS = [
 function groupByRegion() {
   return REGIONS.map(r => ({
     ...r,
-    items: paintings.filter(p => r.countries.some(c => p.country?.includes(c))),
+    items: paintings.filter(p => r.countries.includes(p.country ?? '')),
   })).filter(r => r.items.length > 0)
 }
 
