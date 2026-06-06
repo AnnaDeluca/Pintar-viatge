@@ -60,7 +60,7 @@ export default function LandingPage() {
           margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800,
           fontSize: 42, lineHeight: 0.98, letterSpacing: '-0.01em', color: 'var(--ink)',
         }}>
-          Pintem <span style={{ color: ACCENT }}>junts</span>
+          Pintem <span style={{ color: ACCENT }}>junts</span> <span style={{ fontSize: 14, verticalAlign: 'middle' }}>🟢</span>
         </h1>
         <p style={{
           margin: '8px 0 0', fontSize: 15, color: 'var(--ink-70)', fontFamily: 'var(--font-body)',
