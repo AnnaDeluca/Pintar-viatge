@@ -319,8 +319,8 @@ export default function LaMemFotoPage() {
           boxShadow: '0 -8px 22px rgba(0,0,0,0.40)',
           maxWidth: 720, marginLeft: 'auto', marginRight: 'auto',
         }}>
-        {/* Eines */}
-        <div className="flex items-center justify-center gap-2 px-4 pb-2">
+        {/* Eines + controls de pinzell */}
+        <div className="flex items-center justify-center gap-2 px-4 pb-2 flex-wrap">
           {[{t:'fill',i:'🪣'},{t:'brush',i:'🖌️'}].map(({t,i}) => (
             <button key={t} onClick={() => setTool(t as Tool)}
               style={{
@@ -333,6 +333,43 @@ export default function LaMemFotoPage() {
               <span>{i}</span> {t === 'fill' ? 'Omple' : 'Pinzell'}
             </button>
           ))}
+          {tool === 'brush' && (<>
+            {/* Tipus de pinzell */}
+            {([
+              { t: 'round',  icon: '●' },
+              { t: 'marker', icon: '▮' },
+              { t: 'crayon', icon: '✶' },
+              { t: 'pencil', icon: '✎' },
+            ] as const).map(({ t, icon }) => (
+              <button key={t} onClick={() => setBrushType(t)}
+                style={{
+                  width: 30, height: 30, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700,
+                  background: brushType === t ? `${ACCENT}33` : 'rgba(74,58,32,0.06)',
+                  color: brushType === t ? ACCENT : 'rgba(74,58,32,0.6)',
+                  outline: brushType === t ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(74,58,32,0.15)',
+                }}>
+                {icon}
+              </button>
+            ))}
+            {/* Mides */}
+            {[{l:'S',s:4},{l:'M',s:12},{l:'L',s:28},{l:'XL',s:52}].map(({l,s}) => (
+              <button key={l} onClick={() => setBrushSize(s)}
+                style={{
+                  width: 30, height: 30, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: brushSize === s ? `${ACCENT}33` : 'rgba(74,58,32,0.06)',
+                  outline: brushSize === s ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(74,58,32,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                <div style={{
+                  borderRadius: '50%', background: selectedColor,
+                  width: Math.max(3, Math.min(20, 3 + s * 0.3)),
+                  height: Math.max(3, Math.min(20, 3 + s * 0.3)),
+                  boxShadow: '0 0 0 1px rgba(0,0,0,0.15)',
+                }} />
+              </button>
+            ))}
+          </>)}
         </div>
 
         {/* Colors */}

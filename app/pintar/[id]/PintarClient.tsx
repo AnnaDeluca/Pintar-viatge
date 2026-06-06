@@ -27,6 +27,9 @@ const PIGMENTS: Record<string, string> = {
   munch:'#D85B3C', velazquez:'#7C5C9E', kandinsky:'#7C5C9E', klimt:'#E0A52E',
   hokusai:'#2E6A9E', kusama:'#E0A52E', homer:'#4E8C6A', sargent:'#D85B3C',
   lewitt:'#D85B3C', ndebele:'#4E8C6A',
+  nebamun:'#57CC99', minhwa:'#C4622A', hiroshige2:'#2E6A9E', varma:'#2E6A9E',
+  torres:'#8B4513', figari:'#C4622A', miro:'#E0A52E', wood:'#4E8C6A',
+  tessellation:'#D85B3C', klee:'#E0A52E', delaunay:'#D85B3C', doesburg:'#D85B3C',
 }
 
 // glossy "wet paint" radial fill per cada dab
