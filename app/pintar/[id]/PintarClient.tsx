@@ -7,10 +7,11 @@ import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } 
 import Kusama, { type Dot } from '@/components/paintings/Kusama'
 import { saveArtwork } from '@/lib/artworks'
 
-// Tots els quadres usen SVG (vector, millor qualitat).
-// Si no existeix (ex: renoir), ColoringCanvas fa fallback a posterize en temps real.
+// PNGs = pencil-sketch blanc+línies generat per script Node.js (millor per colorir).
+// SVG = Potrace (regions emplenades, no compatible amb multiply blend).
+// Fallback a runtime posterize si falta el PNG (ex: renoir).
 function sketchUrl(id: string): string {
-  return `/sketches/${id}.svg`
+  return `/sketches/${id}.png`
 }
 
 // Colors extres per omplir paleta si el quadre en té pocs
