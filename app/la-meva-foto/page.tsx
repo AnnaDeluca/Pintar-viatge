@@ -6,8 +6,10 @@ import { saveArtwork } from '@/lib/artworks'
 
 const ACCENT = '#4E8C6A'
 
-// Color Dodge pencil sketch — igual que el script Node.js però al navegador
-async function applyPencilSketch(file: File, sigma: number = 18): Promise<string> {
+// Adaptive threshold sketch — port de l'algoritme OpenCV:
+//   medianBlur(5) + adaptiveThreshold(GAUSSIAN_C, blockSize=11, C=4)
+// Resultat: blanc (fons) + negre (vores) — ideal per pintar per sobre
+async function applyPencilSketch(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
@@ -18,35 +20,36 @@ async function applyPencilSketch(file: File, sigma: number = 18): Promise<string
       const W = Math.round(img.width * scale)
       const H = Math.round(img.height * scale)
 
-      // Canvas original → grisos
-      const c0 = document.createElement('canvas')
-      c0.width = W; c0.height = H
-      const ctx0 = c0.getContext('2d')!
-      ctx0.filter = 'grayscale(100%)'
-      ctx0.drawImage(img, 0, 0, W, H)
-      const grayData = ctx0.getImageData(0, 0, W, H).data
+      // Grisos originals (sense blur)
+      const cGray = document.createElement('canvas')
+      cGray.width = W; cGray.height = H
+      const ctxG = cGray.getContext('2d')!
+      ctxG.filter = 'grayscale(100%)'
+      ctxG.drawImage(img, 0, 0, W, H)
+      const grayData = ctxG.getImageData(0, 0, W, H).data
 
-      // Canvas blur del negatiu (simula el blur gaussià)
+      // Blur gaussià (≈ medianBlur + mitja local per adaptive threshold)
+      // blur(5px) = σ=5 → radi efectiu ~15px ≈ blockSize=11 d'OpenCV
       const cBlur = document.createElement('canvas')
       cBlur.width = W; cBlur.height = H
       const ctxB = cBlur.getContext('2d')!
-      // Invertim la imatge grisa
-      ctxB.filter = `grayscale(100%) invert(100%) blur(${sigma}px)`
+      ctxB.filter = 'grayscale(100%) blur(5px)'
       ctxB.drawImage(img, 0, 0, W, H)
       const blurData = ctxB.getImageData(0, 0, W, H).data
 
-      // Color Dodge
+      // Adaptive threshold: negre si gris < mitja_local - C
+      const C = 4
       const out = document.createElement('canvas')
       out.width = W; out.height = H
       const ctxO = out.getContext('2d')!
       const result = ctxO.createImageData(W, H)
       for (let i = 0; i < W * H; i++) {
-        const g = grayData[i * 4]         // valor gris original
-        const b = blurData[i * 4]         // blur del negatiu
-        const v = b >= 254 ? 255 : Math.min(255, Math.round(g * 255 / (255 - b)))
-        result.data[i * 4]     = v
-        result.data[i * 4 + 1] = v
-        result.data[i * 4 + 2] = v
+        const g    = grayData[i * 4]   // gris original
+        const mean = blurData[i * 4]   // mitja local gaussiana
+        const val  = g < mean - C ? 0 : 255
+        result.data[i * 4]     = val
+        result.data[i * 4 + 1] = val
+        result.data[i * 4 + 2] = val
         result.data[i * 4 + 3] = 255
       }
       ctxO.putImageData(result, 0, 0)
@@ -79,7 +82,7 @@ export default function LaMemFotoPage() {
     try {
       const url = URL.createObjectURL(file)
       setPhotoUrl(url)
-      const sketch = await applyPencilSketch(file, 18)
+      const sketch = await applyPencilSketch(file)
       setSketchUrl(sketch)
     } catch (e) {
       console.error(e)

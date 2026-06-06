@@ -8,69 +8,26 @@ function luma(d: Uint8ClampedArray, i: number) {
   return (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8
 }
 
-// ── POSTERIZE EDGES + NETEJA COMPONENTS PETITS ──────────────────────────
-// Pipeline per a estètica de llibre per pintar real:
-//   1. Quantitza la lluminositat en N nivells (rang adaptatiu)
-//   2. Traça vores entre regions
-//   3. ELIMINA components petits (< minSize píxels) → línies netes,
-//      sense les "illes" de soroll dels gradients de la pintura
-function posterizeEdges(src: ImageData, N = 3, minSize = 40): ImageData {
+// ── ADAPTIVE THRESHOLD SKETCH ─────────────────────────────────────────────
+// Port de l'algoritme OpenCV: medianBlur + adaptiveThreshold + erode
+//   src:     ImageData original (sense blur)
+//   blurred: ImageData amb blur(5px) = mitja local (Gaussiana)
+//   C:       constant de sensibilitat (C=4 → menys soroll que Color Dodge)
+// Sortida: blanc (no-vora) + negre (vora) — compatible amb mixBlendMode multiply
+function adaptiveThresholdSketch(src: ImageData, blurred: ImageData, C = 4): ImageData {
   const { data: d, width: W, height: H } = src
-  const L = new Float32Array(W * H)
-  for (let i = 0; i < W * H; i++) L[i] = luma(d, i * 4)
-
-  const sorted = Float32Array.from(L).sort()
-  const lo = sorted[Math.floor(sorted.length * 0.02)]
-  const hi = sorted[Math.floor(sorted.length * 0.98)]
-  const range = Math.max(1, hi - lo)
-
-  const Q = new Uint8Array(W * H)
-  for (let i = 0; i < W * H; i++) {
-    const norm = Math.max(0, Math.min(1, (L[i] - lo) / range))
-    Q[i] = Math.floor(norm * N * 0.9999)
-  }
-
-  // Marca vores (matriu plana 1=vora, 0=res)
-  const edges = new Uint8Array(W * H)
-  for (let y = 1; y < H - 1; y++) {
-    for (let x = 1; x < W - 1; x++) {
-      const i = y * W + x
-      if (Q[i] !== Q[i - 1] || Q[i] !== Q[i + 1] ||
-          Q[i] !== Q[i - W] || Q[i] !== Q[i + W]) {
-        edges[i] = 1
-      }
-    }
-  }
-
-  // Elimina components connectats (8-veïnatge) més petits que minSize
-  // — això esborra les petites illes/squiggles dels gradients del quadre.
-  const visited = new Uint8Array(W * H)
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const start = y * W + x
-      if (!edges[start] || visited[start]) continue
-      const stack = [start]
-      const comp: number[] = []
-      visited[start] = 1
-      while (stack.length) {
-        const p = stack.pop()!
-        comp.push(p)
-        const px = p % W, py = (p - px) / W
-        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-          if (!dx && !dy) continue
-          const nx = px + dx, ny = py + dy
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue
-          const n = ny * W + nx
-          if (edges[n] && !visited[n]) { visited[n] = 1; stack.push(n) }
-        }
-      }
-      if (comp.length < minSize) for (const p of comp) edges[p] = 0
-    }
-  }
-
-  // Resultat com a ImageData
+  const { data: b } = blurred
   const out = new ImageData(W, H)
-  for (let i = 0; i < W * H; i++) if (edges[i]) out.data[i * 4 + 3] = 255
+  for (let i = 0; i < W * H; i++) {
+    const g    = luma(d, i * 4)   // grisos originals
+    const mean = luma(b, i * 4)   // mitja local (blur gaussià)
+    // negre si el píxel és prou més fosc que el veïnat
+    const val = g < mean - C ? 0 : 255
+    out.data[i * 4]     = val
+    out.data[i * 4 + 1] = val
+    out.data[i * 4 + 2] = val
+    out.data[i * 4 + 3] = 255
+  }
   return out
 }
 
@@ -293,14 +250,18 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
               mc.drawImage(img, 0, 0, W, H)
               maskData.current = new Uint8ClampedArray(mc.getImageData(0, 0, W, H).data)
 
+              const origCanvas2 = document.createElement('canvas')
+              origCanvas2.width = W; origCanvas2.height = H
+              origCanvas2.getContext('2d')!.drawImage(img, 0, 0, W, H)
+              const origData2 = origCanvas2.getContext('2d')!.getImageData(0, 0, W, H)
+
               const blurCanvas = document.createElement('canvas')
               blurCanvas.width = W; blurCanvas.height = H
               const bc = blurCanvas.getContext('2d')!
-              bc.filter = 'blur(8px)'
+              bc.filter = 'blur(5px)'
               bc.drawImage(img, 0, 0, W, H)
-              bc.filter = 'none'
               fillWhite()
-              const edges = posterizeEdges(bc.getImageData(0, 0, W, H), 3, 40)
+              const edges = adaptiveThresholdSketch(origData2, bc.getImageData(0, 0, W, H))
               edge.getContext('2d')!.putImageData(edges, 0, 0)
             } catch {
               fillWhite()
@@ -309,22 +270,22 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
           }
           sketchImg.src = sketchUrl
         } else {
-          // Camí antic: posterize a runtime
+          // Fallback: adaptive threshold a runtime
           try {
             const maskCanvas = document.createElement('canvas')
             maskCanvas.width = W; maskCanvas.height = H
             const mc = maskCanvas.getContext('2d')!
             mc.drawImage(img, 0, 0, W, H)
             maskData.current = new Uint8ClampedArray(mc.getImageData(0, 0, W, H).data)
+            const origData = mc.getImageData(0, 0, W, H)
 
             const blurCanvas = document.createElement('canvas')
             blurCanvas.width = W; blurCanvas.height = H
             const bc = blurCanvas.getContext('2d')!
-            bc.filter = 'blur(8px)'
+            bc.filter = 'blur(5px)'
             bc.drawImage(img, 0, 0, W, H)
-            bc.filter = 'none'
             fillWhite()
-            const edges = posterizeEdges(bc.getImageData(0, 0, W, H), 3, 40)
+            const edges = adaptiveThresholdSketch(origData, bc.getImageData(0, 0, W, H))
             edge.getContext('2d')!.putImageData(edges, 0, 0)
           } catch {
             fillWhite()
