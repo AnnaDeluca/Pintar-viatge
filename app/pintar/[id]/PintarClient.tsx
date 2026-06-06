@@ -235,6 +235,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
   const [canUndo, setCanUndo] = useState(false)
+  const [zoom, setZoom] = useState(1)
   const [trayOpen, setTrayOpen] = useState(true)
   const [showModel, setShowModel] = useState(false)
   const [showExtraColors, setShowExtraColors] = useState(false)  // fila extra amagada per defecte
@@ -376,6 +377,30 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
         >
           ↶
         </button>
+        {/* Zoom +/− (només per al canvas de pintar, no per a Kusama) */}
+        {!isDots && painting.imageUrl && !loadError && (
+          <div className="flex items-center shrink-0" style={{
+            borderRadius: 12, border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(255,255,255,0.09)', backdropFilter: 'blur(6px)',
+            overflow: 'hidden',
+          }}>
+            <button onClick={() => canvasRef.current?.zoomOut()} aria-label="Reduir zoom"
+              disabled={zoom <= 1}
+              className="flex items-center justify-center text-white active:scale-90 transition-transform"
+              style={{ width: 28, height: 36, border: 'none', background: 'transparent', cursor: zoom <= 1 ? 'default' : 'pointer', opacity: zoom <= 1 ? 0.35 : 1, fontSize: 16, fontWeight: 700 }}>
+              −
+            </button>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-body)', fontWeight: 700, minWidth: 24, textAlign: 'center' }}>
+              {zoom > 1 ? `${zoom}×` : '1×'}
+            </span>
+            <button onClick={() => canvasRef.current?.zoomIn()} aria-label="Ampliar zoom"
+              disabled={zoom >= 4}
+              className="flex items-center justify-center text-white active:scale-90 transition-transform"
+              style={{ width: 28, height: 36, border: 'none', background: 'transparent', cursor: zoom >= 4 ? 'default' : 'pointer', opacity: zoom >= 4 ? 0.35 : 1, fontSize: 16, fontWeight: 700 }}>
+              +
+            </button>
+          </div>
+        )}
         {painting.imageUrl && !isDots && (
           <button onClick={() => setShowModel(v => !v)} aria-label={showModel ? 'Amaga model' : 'Mostra model'}
             className="shrink-0 flex items-center justify-center text-white active:scale-95 transition-all"
@@ -492,6 +517,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               brushType={brushType}
               onLoadFail={handleLoadFail}
               onHistoryChange={setCanUndo}
+              onZoomChange={setZoom}
               className="overflow-hidden"
               // Marc blanc tipus "passe-partout" + ombra
               style={{

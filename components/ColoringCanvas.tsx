@@ -72,6 +72,10 @@ export interface ColoringCanvasHandle {
   canUndo: () => boolean
   /** Exporta la composició actual (pintura + contorns) com a PNG data URL */
   exportPng: () => string | null
+  zoomIn: () => void
+  zoomOut: () => void
+  resetZoom: () => void
+  getZoom: () => number
 }
 
 const UNDO_LIMIT = 20  // màxim de passes a guardar (ImageData ocupa molt)
@@ -90,20 +94,46 @@ interface Props {
   brushType?: BrushType
   onLoadFail?: () => void
   onHistoryChange?: (canUndo: boolean) => void
+  onZoomChange?: (zoom: number) => void
   className?: string
   style?: React.CSSProperties
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, sketchUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, className = '', style }, ref) {
+  function ColoringCanvas({ imageUrl, sketchUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, onZoomChange, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
+    const outerRef = useRef<HTMLDivElement>(null)
     const maskData = useRef<Uint8ClampedArray | null>(null)
     const history = useRef<ImageData[]>([])
     const [ready, setReady] = useState(false)
     const [dims, setDims] = useState({ w: 4, h: 3 })
+    const [xform, setXform] = useState({ zoom: 1, panX: 0, panY: 0 })
+    const activePointers = useRef(new Map<number, { x: number; y: number }>())
+    const pinchStart = useRef<{ dist: number; midX: number; midY: number; zoom0: number; panX0: number; panY0: number } | null>(null)
+    const paintingActive = useRef(false)
     // Per forçar re-render del botó d'undo quan canviï la història
     const [historyVersion, setHistoryVersion] = useState(0)
+
+    const applyZoom = useCallback((newZoom: number, anchorScreenX?: number, anchorScreenY?: number) => {
+      const outer = outerRef.current
+      const ow = outer?.clientWidth ?? 400
+      const oh = outer?.clientHeight ?? 300
+      const ax = anchorScreenX !== undefined ? anchorScreenX - (outer?.getBoundingClientRect().left ?? 0) : ow / 2
+      const ay = anchorScreenY !== undefined ? anchorScreenY - (outer?.getBoundingClientRect().top  ?? 0) : oh / 2
+      setXform(prev => {
+        const innerX = (ax - prev.panX) / prev.zoom
+        const innerY = (ay - prev.panY) / prev.zoom
+        if (newZoom <= 1) return { zoom: 1, panX: 0, panY: 0 }
+        return {
+          zoom: newZoom,
+          panX: Math.min(0, Math.max(ow * (1 - newZoom), ax - innerX * newZoom)),
+          panY: Math.min(0, Math.max(oh * (1 - newZoom), ay - innerY * newZoom)),
+        }
+      })
+    }, [])
+
+    useEffect(() => { onZoomChange?.(xform.zoom) }, [xform.zoom, onZoomChange])
 
     const snapshot = useCallback(() => {
       const c = paintRef.current
@@ -125,7 +155,19 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       onHistoryChangeRef.current?.(history.current.length > 0)
     }, [historyVersion])
 
+    const ZOOM_STEPS = [1, 1.5, 2, 3, 4]
+
     useImperativeHandle(ref, () => ({
+      zoomIn() {
+        const next = ZOOM_STEPS.find(s => s > xform.zoom) ?? 4
+        applyZoom(next)
+      },
+      zoomOut() {
+        const prev = [...ZOOM_STEPS].reverse().find(s => s < xform.zoom) ?? 1
+        applyZoom(prev)
+      },
+      resetZoom() { setXform({ zoom: 1, panX: 0, panY: 0 }) },
+      getZoom() { return xform.zoom },
       clear() {
         const c = paintRef.current
         if (!c) return
@@ -166,7 +208,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         ctx.globalCompositeOperation = 'source-over'
         return out.toDataURL('image/png')
       },
-    }), [snapshot])
+    }), [snapshot, xform.zoom, applyZoom])
 
     useEffect(() => {
       const paint = paintRef.current
@@ -383,10 +425,30 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       if (!paint || !ready) return
       e.preventDefault()
       paint.setPointerCapture(e.pointerId)
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (activePointers.current.size >= 2) {
+        // Dos dits: mode pinch/pan — cancel·la el pinzell actiu
+        paintingActive.current = false
+        lastPos.current = null
+        const pts = [...activePointers.current.values()]
+        const dx = pts[1].x - pts[0].x
+        const dy = pts[1].y - pts[0].y
+        pinchStart.current = {
+          dist: Math.hypot(dx, dy),
+          midX: (pts[0].x + pts[1].x) / 2,
+          midY: (pts[0].y + pts[1].y) / 2,
+          zoom0: xform.zoom,
+          panX0: xform.panX,
+          panY0: xform.panY,
+        }
+        return
+      }
+
+      // Un dit: mode pintura
+      paintingActive.current = true
       const { x, y } = getCanvasCoords(e)
       if (x < 0 || x >= paint.width || y < 0 || y >= paint.height) return
-
-      // Snapshot abans de qualsevol acció — permet desfer
       snapshot()
 
       if (tool === 'fill') {
@@ -398,49 +460,86 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         floodFill(pd.data, m, paint.width, paint.height, x, y, fr, fg, fb, 38)
         pc.putImageData(pd, 0, 0)
       } else {
-        // brush: punt inicial
         drawBrushStroke(x, y, x, y)
         lastPos.current = { x, y }
       }
-    }, [ready, selectedColor, tool, brushSize, snapshot])
+    }, [ready, selectedColor, tool, brushSize, snapshot, xform.zoom, xform.panX, xform.panY])
 
     const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (tool !== 'brush' || !lastPos.current || !ready) return
       e.preventDefault()
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (activePointers.current.size >= 2 && pinchStart.current) {
+        // Pinch zoom + pan
+        const pts = [...activePointers.current.values()]
+        const dx = pts[1].x - pts[0].x
+        const dy = pts[1].y - pts[0].y
+        const dist = Math.hypot(dx, dy)
+        const midX = (pts[0].x + pts[1].x) / 2
+        const midY = (pts[0].y + pts[1].y) / 2
+        const { dist: d0, midX: mx0, midY: my0, zoom0, panX0, panY0 } = pinchStart.current
+        const outer = outerRef.current
+        if (!outer) return
+        const rect = outer.getBoundingClientRect()
+        const newZoom = Math.min(4, Math.max(1, zoom0 * dist / d0))
+        // Punt interior fix: on estava el centre del pinch abans
+        const innerX = (mx0 - rect.left - panX0) / zoom0
+        const innerY = (my0 - rect.top  - panY0) / zoom0
+        const ow = outer.clientWidth
+        const oh = outer.clientHeight
+        const newPanX = midX - rect.left - innerX * newZoom
+        const newPanY = midY - rect.top  - innerY * newZoom
+        setXform({
+          zoom: newZoom,
+          panX: newZoom <= 1 ? 0 : Math.min(0, Math.max(ow * (1 - newZoom), newPanX)),
+          panY: newZoom <= 1 ? 0 : Math.min(0, Math.max(oh * (1 - newZoom), newPanY)),
+        })
+        return
+      }
+
+      if (!paintingActive.current || tool !== 'brush' || !lastPos.current || !ready) return
       const { x, y } = getCanvasCoords(e)
       drawBrushStroke(lastPos.current.x, lastPos.current.y, x, y)
       lastPos.current = { x, y }
     }, [tool, ready, selectedColor, brushSize])
 
-    const handlePointerUp = useCallback(() => {
-      lastPos.current = null
+    const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+      activePointers.current.delete(e.pointerId)
+      if (activePointers.current.size < 2) pinchStart.current = null
+      if (activePointers.current.size === 0) {
+        lastPos.current = null
+        paintingActive.current = false
+      }
     }, [])
 
     return (
-      <div className={`relative bg-white ${className}`}
+      <div ref={outerRef} className={`relative bg-white overflow-hidden ${className}`}
         style={{
-          // width:100% dona la dimensió de partida al flex item.
-          // aspectRatio calcula l'alçada proporcionalment.
-          // maxHeight:100% limita si l'alçada calculada excedeix el pare —
-          // i CSS propaga el límit d'alçada de tornada a l'amplada via
-          // aspectRatio, de manera que les proporcions es mantenen sempre.
           width: '100%',
           aspectRatio: `${dims.w}/${dims.h}`,
           maxHeight: '100%',
           ...style,
         }}>
-        <canvas ref={paintRef}
-          className="absolute inset-0 w-full h-full"
-          style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        />
-        <canvas ref={edgeRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ mixBlendMode: 'multiply' }}
-        />
+        {/* inner wrapper que es transforma per zoom/pan */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          transform: `translate(${xform.panX}px, ${xform.panY}px) scale(${xform.zoom})`,
+          transformOrigin: '0 0',
+          willChange: 'transform',
+        }}>
+          <canvas ref={paintRef}
+            className="absolute inset-0 w-full h-full"
+            style={{ cursor: ready ? 'crosshair' : 'default', touchAction: 'none' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          />
+          <canvas ref={edgeRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+        </div>
         {!ready && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-3">
             <div className="text-5xl animate-bounce">🎨</div>
