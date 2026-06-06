@@ -159,7 +159,7 @@ function buildMuseumPins(): MuseumPin[] {
         url: p.museum.url,
         mapsQuery: p.museum.mapsQuery,
         paintings: [],
-        coords: p.coords,
+        coords: p.museum.coords ?? p.coords,
       })
     }
     map.get(key)!.paintings.push(p)

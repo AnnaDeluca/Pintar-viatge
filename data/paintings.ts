@@ -4,6 +4,7 @@ export interface Museum {
   country: string
   url?: string
   mapsQuery?: string
+  coords?: [number, number]   // [lon, lat] del museu real (si difereix del lloc d'origen)
 }
 
 export interface PaintingMeta {
@@ -52,7 +53,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/hokusai.jpg', thumbUrl: '/paintings/hokusai-thumb.jpg',
     coords: [139.7, 35.7],
-    museum: { name: 'Museu Metropolità d\'Art', city: 'Nova York', country: 'EUA', url: 'https://www.metmuseum.org', mapsQuery: 'Metropolitan Museum of Art New York' },
+    museum: { name: 'Museu Metropolità d\'Art', city: 'Nova York', country: 'EUA', url: 'https://www.metmuseum.org', mapsQuery: 'Metropolitan Museum of Art New York', coords: [-73.96, 40.78] },
   },
   {
     id: 'kusama',
@@ -76,7 +77,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/nebamun.jpg', thumbUrl: '/paintings/nebamun-thumb.jpg',
     coords: [32.5, 25.7],
-    museum: { name: 'British Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.britishmuseum.org', mapsQuery: 'British Museum London' },
+    museum: { name: 'British Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.britishmuseum.org', mapsQuery: 'British Museum London', coords: [-0.13, 51.52] },
   },
   // ── Corea ──────────────────────────────────────────────────────
   {
@@ -102,7 +103,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/hiroshige2.jpg', thumbUrl: '/paintings/hiroshige2-thumb.jpg',
     coords: [135.5, 34.7],
-    museum: { name: 'Brooklyn Museum', city: 'Nova York', country: 'EUA', url: 'https://www.brooklynmuseum.org', mapsQuery: 'Brooklyn Museum New York' },
+    museum: { name: 'Brooklyn Museum', city: 'Nova York', country: 'EUA', url: 'https://www.brooklynmuseum.org', mapsQuery: 'Brooklyn Museum New York', coords: [-73.96, 40.67] },
   },
   // ── Índia ──────────────────────────────────────────────────────
   {
@@ -115,7 +116,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/varma.jpg', thumbUrl: '/paintings/varma-thumb.jpg',
     coords: [76.9, 10.5],
-    museum: { name: 'Victoria & Albert Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.vam.ac.uk', mapsQuery: 'Victoria Albert Museum London' },
+    museum: { name: 'Victoria & Albert Museum', city: 'Londres', country: 'Regne Unit', url: 'https://www.vam.ac.uk', mapsQuery: 'Victoria Albert Museum London', coords: [-0.17, 51.50] },
   },
   // ── Amèrica Llatina ────────────────────────────────────────────
   {
@@ -165,7 +166,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/sargent.jpg', thumbUrl: '/paintings/sargent-thumb.jpg',
     coords: [-1.8, 52.1],
-    museum: { name: 'Tate Britain', city: 'Londres', country: 'Regne Unit', url: 'https://www.tate.org.uk/visit/tate-britain', mapsQuery: 'Tate Britain London' },
+    museum: { name: 'Tate Britain', city: 'Londres', country: 'Regne Unit', url: 'https://www.tate.org.uk/visit/tate-britain', mapsQuery: 'Tate Britain London', coords: [-0.13, 51.49] },
   },
   // ── Europa (Espanya / Catalunya) ───────────────────────────────
   {
@@ -227,7 +228,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/artemisia.jpg', thumbUrl: '/paintings/artemisia-thumb.jpg',
     coords: [12.5, 41.9],
-    museum: { name: 'Wadsworth Atheneum', city: 'Hartford, Connecticut', country: 'EUA', url: 'https://www.thewadsworth.org', mapsQuery: 'Wadsworth Atheneum Hartford Connecticut' },
+    museum: { name: 'Wadsworth Atheneum', city: 'Hartford, Connecticut', country: 'EUA', url: 'https://www.thewadsworth.org', mapsQuery: 'Wadsworth Atheneum Hartford Connecticut', coords: [-72.68, 41.76] },
   },
   {
     id: 'sofonisba',
@@ -239,7 +240,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/sofonisba.jpg', thumbUrl: '/paintings/sofonisba-thumb.jpg',
     coords: [9.7, 45.4],
-    museum: { name: 'Museu Nacional de Poznań', city: 'Poznań', country: 'Polònia', url: 'https://mnp.art.pl', mapsQuery: 'National Museum Poznan Poland' },
+    museum: { name: 'Museu Nacional de Poznań', city: 'Poznań', country: 'Polònia', url: 'https://mnp.art.pl', mapsQuery: 'National Museum Poznan Poland', coords: [16.91, 52.41] },
   },
   // ── Europa (França) ────────────────────────────────────────────
   {
@@ -277,7 +278,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/matisse.jpg', thumbUrl: '/paintings/matisse-thumb.jpg',
     coords: [2.4, 47.5],
-    museum: { name: 'Hermitage', city: 'Sant Petersburg', country: 'Rússia', url: 'https://www.hermitagemuseum.org', mapsQuery: 'Hermitage Museum Saint Petersburg Russia' },
+    museum: { name: 'Hermitage', city: 'Sant Petersburg', country: 'Rússia', url: 'https://www.hermitagemuseum.org', mapsQuery: 'Hermitage Museum Saint Petersburg Russia', coords: [30.31, 59.94] },
   },
   {
     id: 'vigee',
@@ -289,7 +290,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/vigee.jpg', thumbUrl: '/paintings/vigee-thumb.jpg',
     coords: [2.3, 48.85],
-    museum: { name: 'National Gallery', city: 'Londres', country: 'Regne Unit', url: 'https://www.nationalgallery.org.uk', mapsQuery: 'National Gallery London' },
+    museum: { name: 'National Gallery', city: 'Londres', country: 'Regne Unit', url: 'https://www.nationalgallery.org.uk', mapsQuery: 'National Gallery London', coords: [-0.13, 51.51] },
   },
   // ── Europa (Holanda) ───────────────────────────────────────────
   {
@@ -314,7 +315,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/cassatt.jpg', thumbUrl: '/paintings/cassatt-thumb.jpg',
     coords: [4.9, 52.5],
-    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago' },
+    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
   },
   {
     id: 'vermeer',
@@ -338,7 +339,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/mondrian.jpg', thumbUrl: '/paintings/mondrian-thumb.jpg',
     coords: [4.9, 52.2],
-    museum: { name: 'Kunsthaus Zürich', city: 'Zuric', country: 'Suïssa', url: 'https://www.kunsthaus.ch', mapsQuery: 'Kunsthaus Zurich Switzerland' },
+    museum: { name: 'Kunsthaus Zürich', city: 'Zuric', country: 'Suïssa', url: 'https://www.kunsthaus.ch', mapsQuery: 'Kunsthaus Zurich Switzerland', coords: [8.55, 47.37] },
   },
   // ── Europa (Noruega) ───────────────────────────────────────────
   {
@@ -364,7 +365,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/wood.jpg', thumbUrl: '/paintings/wood-thumb.jpg',
     coords: [-93.6, 42.0],
-    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago' },
+    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
   },
   // ── Obres "inspirades" eliminades temporalment fins trobar millor solució ──
   // ── Matemàtiques i patrons ─────────────────────────────────────
@@ -389,7 +390,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/klee.jpg', thumbUrl: '/paintings/klee-thumb.jpg',
     coords: [8.5, 47.4],
-    museum: { name: 'Zentrum Paul Klee', city: 'Berna', country: 'Suïssa', url: 'https://www.zpk.org', mapsQuery: 'Zentrum Paul Klee Bern Switzerland' },
+    museum: { name: 'Zentrum Paul Klee', city: 'Berna', country: 'Suïssa', url: 'https://www.zpk.org', mapsQuery: 'Zentrum Paul Klee Bern Switzerland', coords: [7.45, 46.96] },
   },
   {
     id: 'delaunay',
@@ -426,7 +427,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/kandinsky.jpg', thumbUrl: '/paintings/kandinsky-thumb.jpg',
     coords: [11.6, 48.1],
-    museum: { name: 'Galeria Tretyakov', city: 'Moscou', country: 'Rússia', url: 'https://www.tretyakovgallery.ru', mapsQuery: 'Tretyakov Gallery Moscow Russia' },
+    museum: { name: 'Galeria Tretyakov', city: 'Moscou', country: 'Rússia', url: 'https://www.tretyakovgallery.ru', mapsQuery: 'Tretyakov Gallery Moscow Russia', coords: [37.62, 55.74] },
   },
   {
     id: 'klimt',
