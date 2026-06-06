@@ -53,7 +53,7 @@ const PAINTING_COLOR: Record<string, string> = {
   hokusai:'#4CC9F0', kusama:'#F6C90E', homer:'#57CC99', sargent:'#FF6B6B',
   lewitt:'#E63946', ndebele:'#57CC99', miro:'#F6C90E', klee:'#F4A261',
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
-  varma:'#7C5C9E', figari:'#E0A52E', torres:'#D85B3C', abaporu:'#4CC9F0',
+  varma:'#7C5C9E', figari:'#E0A52E', torres:'#D85B3C',
   nebamun:'#E0A52E', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
   wood:'#57CC99',
 }
