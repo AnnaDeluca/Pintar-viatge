@@ -315,7 +315,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/cassatt.jpg', thumbUrl: '/paintings/cassatt-thumb.jpg',
     coords: [4.9, 52.5],
-    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
+    museum: { name: "Institut d'Art de Chicago", city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
   },
   {
     id: 'vermeer',
@@ -365,7 +365,7 @@ export const paintings: PaintingMeta[] = [
     regions: [],
     imageUrl: '/paintings/wood.jpg', thumbUrl: '/paintings/wood-thumb.jpg',
     coords: [-93.6, 42.0],
-    museum: { name: 'Art Institute of Chicago', city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
+    museum: { name: "Institut d'Art de Chicago", city: 'Chicago', country: 'EUA', url: 'https://www.artic.edu', mapsQuery: 'Art Institute of Chicago', coords: [-87.62, 41.88] },
   },
   // ── Obres "inspirades" eliminades temporalment fins trobar millor solució ──
   // ── Matemàtiques i patrons ─────────────────────────────────────

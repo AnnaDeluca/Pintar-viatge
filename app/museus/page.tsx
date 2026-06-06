@@ -145,6 +145,14 @@ interface MuseumPin {
   coords: [number, number]
 }
 
+// Clúster de pins propers (agrupa múltiples museus en una sola icona)
+interface ClusterPin {
+  keys: string[]           // claus dels museus del clúster
+  cx: number; cy: number  // posició SVG del centre
+  totalPaintings: number
+  museums: MuseumPin[]
+}
+
 function buildMuseumPins(): MuseumPin[] {
   const map = new Map<string, MuseumPin>()
   for (const p of paintings) {
@@ -180,6 +188,7 @@ export default function MuseusPage() {
   const [dims, setDims] = useState({ w: 380, h: 264 })
   const [geo, setGeo] = useState<GeoData | null>(null)
   const [active, setActive] = useState<MuseumPin | null>(null)
+  const [activeCluster, setActiveCluster] = useState<ClusterPin | null>(null)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
 
@@ -282,6 +291,43 @@ export default function MuseusPage() {
   const zoomIn = () => zoomAround(1.6)
   const zoomOut = () => zoomAround(1 / 1.6)
 
+  // Agrupa museus propers en clústers segons el zoom actual
+  // Distància de clustering dinàmica: 20px en coordenades de pantalla
+  const clusters = useMemo<ClusterPin[]>(() => {
+    if (!geo) return []
+    const CLUSTER_PX = 32  // píxels de pantalla per agrupar
+    const CLUSTER_SVG = CLUSTER_PX / zoom
+    const groups: ClusterPin[] = []
+    for (const m of MUSEUM_PINS) {
+      const p = geo.pins[m.key]
+      if (!p) continue
+      const existing = groups.find(g => Math.hypot(g.cx - p[0], g.cy - p[1]) < CLUSTER_SVG)
+      if (existing) {
+        existing.keys.push(m.key)
+        existing.museums.push(m)
+        existing.totalPaintings += m.paintings.length
+        // actualitza centre (centroide)
+        existing.cx = (existing.cx * (existing.keys.length - 1) + p[0]) / existing.keys.length
+        existing.cy = (existing.cy * (existing.keys.length - 1) + p[1]) / existing.keys.length
+      } else {
+        groups.push({ keys: [m.key], cx: p[0], cy: p[1], totalPaintings: m.paintings.length, museums: [m] })
+      }
+    }
+    return groups
+  }, [geo, zoom])
+
+  // Museus visibles en el viewport actual del mapa
+  const visibleMuseums = useMemo(() => {
+    if (!geo) return MUSEUM_PINS.slice(0, 8)
+    return MUSEUM_PINS.filter(m => {
+      const p = geo.pins[m.key]
+      if (!p) return false
+      const sx = p[0] * zoom + pan.x
+      const sy = p[1] * zoom + pan.y
+      return sx >= -20 && sx <= dims.w + 20 && sy >= -20 && sy <= dims.h + 20
+    }).slice(0, 12)
+  }, [geo, zoom, pan, dims])
+
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
       {/* Header */}
@@ -317,59 +363,65 @@ export default function MuseusPage() {
             {geo?.paths.map((p, i) => (
               <path key={i} d={p.d ?? ''} fill="#e8f0e0" stroke="rgba(46,106,158,0.25)" strokeWidth={0.6 / zoom} strokeLinejoin="round"/>
             ))}
-            {geo && (() => {
-              // Spread pins solapats en cercle (mateixa lògica que WorldMap)
-              const TOLERANCE = 6
-              const SPREAD_R = 18 / zoom
-              const groups: { cx: number; cy: number; keys: string[] }[] = []
-              MUSEUM_PINS.forEach(m => {
-                const p = geo.pins[m.key]
-                if (!p) return
-                const g = groups.find(g => Math.hypot(g.cx - p[0], g.cy - p[1]) < TOLERANCE)
-                if (g) g.keys.push(m.key)
-                else groups.push({ cx: p[0], cy: p[1], keys: [m.key] })
-              })
-              const spread: Record<string, [number, number]> = {}
-              groups.forEach(g => {
-                if (g.keys.length === 1) {
-                  const p = geo.pins[g.keys[0]]
-                  if (p) spread[g.keys[0]] = p
-                } else {
-                  g.keys.forEach((key, i) => {
-                    const angle = (2 * Math.PI * i / g.keys.length) - Math.PI / 2
-                    spread[key] = [g.cx + Math.cos(angle) * SPREAD_R, g.cy + Math.sin(angle) * SPREAD_R]
-                  })
-                }
-              })
-              return MUSEUM_PINS.map(m => {
-                const p = spread[m.key]
-                if (!p) return null
-                const s = 1 / zoom
-                const isActive = active?.key === m.key
-                return (
-                  <g key={m.key} transform={`translate(${p[0]},${p[1]}) scale(${s})`}
-                    style={{ cursor: 'pointer' }} onClick={() => setActive(isActive ? null : m)}>
-                    <circle r={24} fill="transparent"/>
-                    <circle r={7 + m.paintings.length * 2}
-                      fill={isActive ? ACCENT : '#fff'}
-                      stroke={ACCENT} strokeWidth={2.5}
-                      style={{ filter: `drop-shadow(0 2px 5px ${ACCENT}55)` }}/>
-                    <text textAnchor="middle" y={4} fontSize={11} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                      🏛️
-                    </text>
-                    <text textAnchor="middle" y={20} fontSize={9} fill={ACCENT}
-                      style={{ fontFamily: 'var(--font-display)', fontWeight: 800, pointerEvents: 'none' }}>
-                      {m.paintings.length}
-                    </text>
-                  </g>
-                )
-              })
-            })()}
+            {clusters.map(cl => {
+              const s = 1 / zoom
+              const isCluster = cl.keys.length > 1
+              const isSingle = cl.keys.length === 1
+              const museum = isSingle ? cl.museums[0] : null
+              const isActive = isSingle && active?.key === cl.keys[0]
+              const r = isCluster ? Math.min(14, 8 + cl.keys.length) : 8 + cl.totalPaintings * 1.5
+              return (
+                <g key={cl.keys.join('|')}
+                  transform={`translate(${cl.cx},${cl.cy}) scale(${s})`}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    if (isCluster) {
+                      // Zoom al clúster per desagrupar-lo
+                      const newZ = Math.min(20, zoom * 3)
+                      setView(newZ, {
+                        x: dims.w / 2 - cl.cx * newZ,
+                        y: dims.h / 2 - cl.cy * newZ,
+                      })
+                    } else if (museum) {
+                      setActive(isActive ? null : museum)
+                    }
+                  }}>
+                  <circle r={r + 10} fill="transparent"/>
+                  <circle r={r}
+                    fill={isActive ? ACCENT : (isCluster ? ACCENT : '#fff')}
+                    stroke={ACCENT} strokeWidth={isCluster ? 0 : 2.5}
+                    style={{ filter: `drop-shadow(0 2px 6px ${ACCENT}66)` }}/>
+                  {isCluster ? (
+                    <>
+                      <text textAnchor="middle" y={5} fontSize={Math.max(10, r * 0.8)}
+                        fill="white" fontWeight={800}
+                        style={{ fontFamily: 'var(--font-display)', pointerEvents: 'none', userSelect: 'none' }}>
+                        {cl.keys.length}
+                      </text>
+                    </>
+                  ) : (
+                    <>
+                      <text textAnchor="middle" y={4} fontSize={11}
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                        🏛️
+                      </text>
+                      {cl.totalPaintings > 1 && (
+                        <text textAnchor="middle" y={20} fontSize={9}
+                          fill={isActive ? 'white' : ACCENT}
+                          style={{ fontFamily: 'var(--font-display)', fontWeight: 800, pointerEvents: 'none' }}>
+                          {cl.totalPaintings}
+                        </text>
+                      )}
+                    </>
+                  )}
+                </g>
+              )
+            })}
           </g>
         </svg>
 
-        {/* Botons zoom */}
-        <div className="absolute bottom-2 right-2 flex flex-col gap-1">
+        {/* Botons zoom — dalt-esquerra per no tapar pins */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
           {[{fn: zoomIn, l: '+'}, {fn: zoomOut, l: '−'}].map(({fn, l}) => (
             <button key={l} onClick={fn} style={{
               width: 32, height: 32, borderRadius: 10, border: '1px solid rgba(46,106,158,0.25)',
@@ -391,14 +443,18 @@ export default function MuseusPage() {
       {/* Carrusel Netflix del museu actiu */}
       {active && <MuseumCarousel museum={active} onClose={() => setActive(null)} onPick={id => router.push(`/pintar/${id}`)} />}
 
-      {/* Llista museus (quan no hi ha actiu) */}
+      {/* Llista museus visibles al viewport (quan no hi ha actiu) */}
       {!active && (
         <div className="mx-4 mb-4 overflow-y-auto shrink-0" style={{ maxHeight: '38vh' }}>
           <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 800, color: 'var(--ink-50)', letterSpacing: '0.08em', fontFamily: 'var(--font-body)' }}>
-            TOCA UN PIN AL MAPA O UN MUSEU DE LA LLISTA
+            {zoom > 1.05 ? `${visibleMuseums.length} MUSEUS EN AQUEST ÀREA` : 'TOCA UN PIN O UN MUSEU DE LA LLISTA'}
           </p>
           <div className="flex flex-col gap-2">
-            {MUSEUM_PINS.slice(0, 8).map(m => (
+            {visibleMuseums.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--ink-50)', textAlign: 'center', padding: '12px 0', fontFamily: 'var(--font-body)' }}>
+                Cap museu en aquesta zona — allunya el zoom per veure&apos;n més
+              </p>
+            ) : visibleMuseums.map(m => (
               <button key={m.key} onClick={() => setActive(m)}
                 className="flex items-center gap-3 active:scale-95 transition-transform text-left"
                 style={{
