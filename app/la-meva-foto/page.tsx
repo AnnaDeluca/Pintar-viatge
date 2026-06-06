@@ -2,6 +2,7 @@
 import { useRef, useState, useCallback } from 'react'
 import Link from 'next/link'
 import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } from '@/components/ColoringCanvas'
+import { saveArtwork } from '@/lib/artworks'
 
 const ACCENT = '#4E8C6A'
 
@@ -64,6 +65,8 @@ export default function LaMemFotoPage() {
   const [brushType, setBrushType] = useState<BrushType>('round')
   const [brushSize, setBrushSize] = useState(8)
   const [selectedColor, setSelectedColor] = useState('#E63946')
+  const [celebrate, setCelebrate] = useState(false)
+  const [savedOk, setSavedOk] = useState(false)
   const canvasRef = useRef<ColoringCanvasHandle>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -80,6 +83,27 @@ export default function LaMemFotoPage() {
     } finally {
       setProcessing(false)
     }
+  }, [])
+
+  const handleFinish = useCallback(() => {
+    const dataUrl = canvasRef.current?.exportPng()
+    if (dataUrl) {
+      try {
+        saveArtwork({
+          paintingId: 'la-meva-foto',
+          paintingTitle: 'La meva foto',
+          artist: 'Jo!',
+          emoji: '📸',
+          childName: 'Artista',
+          artworkName: 'La meva foto pintada',
+          dataUrl,
+        })
+        setSavedOk(true)
+      } catch (e) {
+        console.warn('Save failed', e)
+      }
+    }
+    setCelebrate(true)
   }, [])
 
   const QUICK_COLORS = ['#E63946','#F6C90E','#4CC9F0','#57CC99','#8B5CF6','#F4A261','#1A1A1A','#FFFFFF']
@@ -147,6 +171,50 @@ export default function LaMemFotoPage() {
         <input ref={fileRef} type="file" accept="image/*"
           style={{ display: 'none' }}
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
+      </div>
+    )
+  }
+
+  if (celebrate) {
+    return (
+      <div className="flex flex-col h-dvh overflow-hidden items-center justify-center gap-6"
+        style={{ background: 'radial-gradient(ellipse at 50% 32%, #322E29 0%, #211E1A 62%, #18150F 100%)' }}>
+        <div style={{ fontSize: 80, animation: 'bob 1s ease-in-out infinite' }}>🎉</div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, color: 'white', margin: 0, textAlign: 'center' }}>
+          Ets un artista!
+        </h2>
+        {savedOk && (
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-body)', fontSize: 14, margin: 0 }}>
+            Obra guardada a Les meves obres ✓
+          </p>
+        )}
+        <div className="flex flex-col gap-3 w-full" style={{ maxWidth: 300, padding: '0 20px' }}>
+          <Link href="/les-meves-obres"
+            style={{
+              display: 'block', textAlign: 'center', padding: '14px 20px', borderRadius: 16,
+              background: ACCENT, color: 'white', textDecoration: 'none',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16,
+            }}>
+            🖼️ Veure les meves obres
+          </Link>
+          <button onClick={() => { setCelebrate(false); setSavedOk(false) }}
+            style={{
+              padding: '12px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.2)',
+              background: 'rgba(255,255,255,0.09)', color: 'white',
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, cursor: 'pointer',
+            }}>
+            📸 Continuar pintant
+          </button>
+          <Link href="/"
+            style={{
+              display: 'block', textAlign: 'center', padding: '10px 20px', borderRadius: 16,
+              border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
+              color: 'rgba(255,255,255,0.6)', textDecoration: 'none',
+              fontFamily: 'var(--font-body)', fontSize: 13,
+            }}>
+            Tornar al menú
+          </Link>
+        </div>
       </div>
     )
   }
@@ -225,6 +293,22 @@ export default function LaMemFotoPage() {
           />
         ) : null}
       </div>
+
+      {/* He acabat — botó flotant */}
+      {sketchUrl && !processing && (
+        <button onClick={handleFinish}
+          className="fixed active:scale-95 transition-transform"
+          style={{
+            bottom: 160, right: 16, zIndex: 50,
+            padding: '12px 20px', borderRadius: 999,
+            background: ACCENT, color: 'white', border: 'none',
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15,
+            boxShadow: '0 8px 24px rgba(78,140,106,0.5)',
+            cursor: 'pointer',
+          }}>
+          He acabat ✓
+        </button>
+      )}
 
       {/* Safata de colors simplificada */}
       <div className="fixed left-0 right-0 pb-safe"
