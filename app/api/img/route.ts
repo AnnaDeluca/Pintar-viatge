@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'nodejs'
+
 const ALLOWED_ORIGINS = [
   'upload.wikimedia.org',
 ]
@@ -19,9 +21,18 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Origin not allowed', { status: 403 })
   }
 
-  const upstream = await fetch(url, {
-    headers: { 'User-Agent': 'PintarViatge/1.0 (https://pintar-viatge.vercel.app)' },
-  })
+  let upstream: Response
+  try {
+    upstream = await fetch(url, {
+      headers: {
+        // Wikimedia exigeix un User-Agent identificable amb contacte (User-Agent policy)
+        'User-Agent': 'PintarViatge/1.0 (https://pintar-viatge.vercel.app; anuskitadeluca@gmail.com) NextjsImageProxy',
+        'Accept': 'image/*',
+      },
+    })
+  } catch {
+    return new NextResponse('Fetch failed', { status: 502 })
+  }
 
   if (!upstream.ok) {
     return new NextResponse('Upstream error', { status: 502 })
