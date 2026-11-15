@@ -70,8 +70,9 @@ export default function LandingPage() {
       </header>
 
       {/* Mode cards */}
-      <main className="flex-1 overflow-y-auto px-5 pb-6" style={{ maxWidth: 540, margin: '0 auto', width: '100%' }}>
-        <div className="flex flex-col gap-3">
+      <main className="flex-1 overflow-y-auto flex flex-col px-5 pb-6" style={{ maxWidth: 540, margin: '0 auto', width: '100%' }}>
+        {/* margin auto = centrat vertical quan sobra espai, scroll normal quan no */}
+        <div className="flex flex-col gap-4" style={{ margin: 'auto 0' }}>
           {MODES.map(m => (
             <Link key={m.href} href={m.href}
               className="flex items-center gap-4 active:scale-98 transition-transform"

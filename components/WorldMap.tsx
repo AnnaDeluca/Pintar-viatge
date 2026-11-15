@@ -121,8 +121,10 @@ function useWorldMap(W: number, H: number): { geo: GeoData | null; err: boolean 
     let alive = true
     async function load() {
       try {
-        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-        const topo = await res.json()
+        // Primer el fitxer local (ràpid, funciona offline); CDN només de fallback
+        const topo = await fetch('/countries-110m.json')
+          .then(r => { if (!r.ok) throw new Error('local'); return r.json() })
+          .catch(() => fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json()))
         // @ts-expect-error topojson types loose
         const fc = feature(topo, topo.objects.countries) as FeatureCollection
         const fcForFit: FeatureCollection = {

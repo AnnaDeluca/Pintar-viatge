@@ -75,7 +75,7 @@ export default function MyArtworksPage() {
             <div style={{
               fontSize: 13.5, color: 'var(--ink-50)', marginTop: 6, maxWidth: 260,
             }}>
-              Pinta un quadre i clica &quot;HE ACABAT&quot; per guardar-lo aqui
+              Pinta un quadre i clica &quot;HE ACABAT&quot; per guardar-lo aquí
             </div>
             <Link href="/"
               style={{
@@ -85,7 +85,7 @@ export default function MyArtworksPage() {
                 textDecoration: 'none',
                 boxShadow: '0 6px 20px rgba(216,91,60,0.4)',
               }}>
-              Comencar a pintar
+              Començar a pintar
             </Link>
           </div>
         ) : (

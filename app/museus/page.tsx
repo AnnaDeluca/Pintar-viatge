@@ -7,7 +7,9 @@ import type { Feature, FeatureCollection } from 'geojson'
 import Link from 'next/link'
 import { paintings, type PaintingMeta } from '@/data/paintings'
 
-const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+// Fitxer local (ràpid, funciona offline); CDN només de fallback
+const GEO_URL = '/countries-110m.json'
+const GEO_URL_FALLBACK = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 const ACCENT = '#2E6A9E'
 
 // ── Carrusel Netflix del museu ───────────────────────────────────
@@ -214,7 +216,10 @@ export default function MuseusPage() {
   // Load map
   useEffect(() => {
     let alive = true
-    fetch(GEO_URL).then(r => r.json()).then(topo => {
+    fetch(GEO_URL)
+      .then(r => { if (!r.ok) throw new Error('local'); return r.json() })
+      .catch(() => fetch(GEO_URL_FALLBACK).then(r => r.json()))
+      .then(topo => {
       if (!alive) return
       const fc = feature(topo as any, (topo as any).objects.countries) as unknown as FeatureCollection
       const forFit: FeatureCollection = { type: 'FeatureCollection', features: fc.features.filter((f: Feature) => Number((f as any).id) !== 10) }
@@ -224,7 +229,7 @@ export default function MuseusPage() {
       const pins: Record<string, [number, number]> = {}
       MUSEUM_PINS.forEach(m => { const p = proj(m.coords); if (p) pins[m.key] = p })
       setGeo({ paths, pins })
-    })
+    }).catch(() => {})
     return () => { alive = false }
   }, [dims.w, dims.h])
 

@@ -205,7 +205,7 @@ export default function LaMemFotoPage() {
         </div>
 
         <p style={{ marginTop: 24, fontSize: 12, color: 'var(--ink-35)', fontFamily: 'var(--font-body)' }}>
-          La foto no surt de l&apos;aparell — tot es processa al teu dispositiu
+          El dibuix es crea amb una IA en línia — si no està disponible, tot es processa al teu dispositiu
         </p>
 
         <input ref={fileRef} type="file" accept="image/*"
