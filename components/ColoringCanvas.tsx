@@ -224,6 +224,9 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
       const failTimer = setTimeout(() => { if (alive) onFailRef.current?.() }, 15000)
 
       const img = new Image()
+      // Necessari per a imatges remotes (ex: Wikimedia): sense això el canvas
+      // queda "tainted" i getImageData/toDataURL llancen SecurityError.
+      if (/^https?:\/\//.test(imageUrl)) img.crossOrigin = 'anonymous'
 
       img.onload = () => {
         if (!alive) return

@@ -16,14 +16,18 @@ const TARGET_MAX = 0.14  // 14% black pixels maximum
 
 // Skip list: paintings that already have good SVG-only sketches or no PNG needed
 const SKIP = new Set(['abaporu', 'basquiat', 'lichtenstein', 'okeeffe', 'popart', 'tessellation'])
-// Already fixed with Sobel manually
-const ALREADY_DONE = new Set(['lascaux'])
 
-async function sobelSketch(src, targetMin = TARGET_MIN, targetMax = TARGET_MAX) {
+// Ajustos per quadre. `blur` més alt elimina textura fina (ex: la roca de
+// Lascaux) i deixa només els contorns grans. `targetMax` més baix = menys línies.
+const OVERRIDES = {
+  lascaux: { blur: 4, targetMax: 0.10 },
+}
+
+async function sobelSketch(src, { blur = 1.5, targetMin = TARGET_MIN, targetMax = TARGET_MAX } = {}) {
   const { data: grayRaw, info } = await sharp(src)
     .resize(MAX_DIM, MAX_DIM, { fit: 'inside' })
     .greyscale()
-    .blur(1.5)
+    .blur(blur)
     .raw()
     .toBuffer({ resolveWithObject: true })
 
@@ -80,15 +84,18 @@ async function sobelSketch(src, targetMin = TARGET_MIN, targetMax = TARGET_MAX) 
   return { result, W, H, N, dark, T: bestT }
 }
 
-// Process all paintings that have a PNG sketch
+// Process all paintings that have a PNG sketch.
+// Usage: node scripts/regenerate-sketches.mjs [nom1 nom2 ...] per regenerar només alguns.
+const only = new Set(process.argv.slice(2))
 const paintings = readdirSync(PAINTINGS_DIR)
   .filter(f => f.endsWith('.jpg') && !f.includes('-thumb'))
   .map(f => f.replace('.jpg', ''))
+  .filter(name => only.size === 0 || only.has(name))
 
 let ok = 0, skipped = 0, errors = 0
 
 for (const name of paintings) {
-  if (SKIP.has(name) || ALREADY_DONE.has(name)) {
+  if (SKIP.has(name)) {
     process.stdout.write(`  skip  ${name}\n`)
     skipped++
     continue
@@ -103,7 +110,7 @@ for (const name of paintings) {
 
   const src = join(PAINTINGS_DIR, `${name}.jpg`)
   try {
-    const { result, W, H, N, dark, T } = await sobelSketch(src)
+    const { result, W, H, N, dark, T } = await sobelSketch(src, OVERRIDES[name])
     await sharp(result, { raw: { width: W, height: H, channels: 3 } })
       .png({ compressionLevel: 6 })
       .toFile(sketchPath)

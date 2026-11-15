@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
   try {
     upstream = await fetch(url, {
       headers: {
-        // Wikimedia exigeix un User-Agent identificable amb contacte (User-Agent policy)
-        'User-Agent': 'PintarViatge/1.0 (https://pintar-viatge.vercel.app; anuskitadeluca@gmail.com) NextjsImageProxy',
+        // Wikimedia exigeix un User-Agent identificable (User-Agent policy)
+        'User-Agent': 'PintarViatge/1.0 (https://pintar-viatge.vercel.app) NextjsImageProxy',
         'Accept': 'image/*',
       },
     })

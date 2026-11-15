@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { paintings } from '@/data/paintings'
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'pintem2024'
-
 export async function POST(req: NextRequest) {
+  // Sense ADMIN_PASSWORD configurat, l'endpoint queda tancat (mai una
+  // contrasenya per defecte al codi: el repo és llegible públicament).
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+  if (!ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'ADMIN_PASSWORD no configurat a Vercel (Settings → Environment Variables)' }, { status: 503 })
+  }
   const pw = req.headers.get('x-admin-password')
   if (pw !== ADMIN_PASSWORD) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
