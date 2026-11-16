@@ -511,6 +511,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
               ref={canvasRef}
               imageUrl={customImageUrl || painting.imageUrl}
               sketchUrl={customImageUrl ? undefined : sketchUrl(painting.id)}
+              maskSource={painting.aiSketch && !customImageUrl ? 'sketch' : 'image'}
               selectedColor={selectedColor}
               tool={tool}
               brushSize={brushSize}

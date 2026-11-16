@@ -25,7 +25,23 @@ pel món i el temps. Feta amb Next.js (App Router) + Tailwind, en català.
   (sense arguments els regenera tots). Ajustos per quadre a `OVERRIDES` dins
   l'script: `blur` (elimina textura fina), `minComp` (anti-puntets), `dilate`
   (engruixeix línies) i `colorEdges` (vores per canal de color, per a contorns
-  que tenen la mateixa lluminositat — ex. la Venus de Botticelli).
+  que tenen la mateixa lluminositat).
+
+### Sketches amb IA (qualitat superior)
+
+Per als quadres on el Sobel no arriba (figures de contorn suau, molta textura),
+el sketch es genera **manualment amb Gemini** (gratis, sense tokens) i es
+commiteja com a fitxer estàtic — l'app no depèn de cap servei en runtime:
+
+1. Puja `public/paintings/<id>.jpg` a [gemini.google.com](https://gemini.google.com)
+   amb el prompt que hi ha dins `scripts/install-ai-sketch.mjs`.
+2. `node scripts/install-ai-sketch.mjs <id> <imatge-descarregada>` (neteja i instal·la).
+3. `aiSketch: true` al quadre a `data/paintings.ts` — fa que el cubell d'omplir
+   usi les línies del sketch com a límits (l'art IA no està alineat píxel a
+   píxel amb el quadre).
+4. Afegeix l'id al `SKIP` de `regenerate-sketches.mjs`.
+
+Fet així: `botticelli`.
 
 ## Desplegament
 

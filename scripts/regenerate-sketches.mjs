@@ -16,7 +16,9 @@ const TARGET_MAX = 0.14  // 14% black pixels maximum
 
 // Quadres a no tocar encara que tinguin PNG (cap ara mateix; els que no
 // tenen sketch PNG ja se salten sols).
-const SKIP = new Set()
+// Sketches IA fets a mà (Gemini) — NO sobreescriure amb Sobel.
+// Workflow: README § "Sketches amb IA".
+const SKIP = new Set(['botticelli'])
 
 // Ajustos per quadre:
 //   blur      — més alt elimina textura fina (roca, pa d'or) i deixa els contorns grans
@@ -26,7 +28,6 @@ const SKIP = new Set()
 const OVERRIDES = {
   lascaux:    { blur: 4, targetMax: 0.10 },
   klimt:      { blur: 4, targetMax: 0.10 },  // la textura daurada es menja la parella
-  botticelli: { blur: 2, colorEdges: true, minComp: 60, targetMin: 0.12, targetMax: 0.16 },
   kandinsky:  { blur: 2.5 },
   sofonisba:  { blur: 2 },
   hokusai:    { blur: 2 },

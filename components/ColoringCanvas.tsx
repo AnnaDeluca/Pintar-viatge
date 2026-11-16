@@ -88,6 +88,12 @@ interface Props {
   /** SVG pre-generat amb els contorns (a /public/sketches/). Si es present
    *  s'usa en lloc de l'algoritme de detecció a runtime. */
   sketchUrl?: string
+  /** D'on surt la màscara del cubell d'omplir:
+   *  'image' (per defecte) — les zones de color del quadre original (per a
+   *  sketches Sobel, que calquen els píxels reals).
+   *  'sketch' — les línies negres del sketch són els límits (per a sketches
+   *  IA redibuixats, estil llibre per pintar clàssic). */
+  maskSource?: 'image' | 'sketch'
   selectedColor: string
   tool?: Tool
   brushSize?: number
@@ -100,7 +106,7 @@ interface Props {
 }
 
 const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
-  function ColoringCanvas({ imageUrl, sketchUrl, selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, onZoomChange, className = '', style }, ref) {
+  function ColoringCanvas({ imageUrl, sketchUrl, maskSource = 'image', selectedColor, tool = 'fill', brushSize = 20, brushType = 'round', onLoadFail, onHistoryChange, onZoomChange, className = '', style }, ref) {
     const paintRef = useRef<HTMLCanvasElement>(null)
     const edgeRef  = useRef<HTMLCanvasElement>(null)
     const outerRef = useRef<HTMLDivElement>(null)
@@ -281,6 +287,18 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
               const ec = edge.getContext('2d')!
               ec.clearRect(0, 0, W, H)
               ec.drawImage(sketchImg, 0, 0, W, H)
+              if (maskSource === 'sketch') {
+                // La màscara del cubell són les línies del sketch, binaritzades
+                // perquè l'antialiasing no aturi l'ompliment abans d'hora.
+                const md = ec.getImageData(0, 0, W, H).data
+                const m = new Uint8ClampedArray(md.length)
+                for (let i = 0; i < md.length; i += 4) {
+                  const v = md[i] < 200 ? 0 : 255
+                  m[i] = m[i + 1] = m[i + 2] = v
+                  m[i + 3] = 255
+                }
+                maskData.current = m
+              }
             } catch {
               fillWhite()
             }
@@ -348,7 +366,7 @@ const ColoringCanvas = forwardRef<ColoringCanvasHandle, Props>(
         img.onload = null
         img.onerror = null
       }
-    }, [imageUrl, sketchUrl])  // re-run when imageUrl or sketchUrl changes
+    }, [imageUrl, sketchUrl, maskSource])  // re-run when inputs change
 
     const lastPos = useRef<{ x: number; y: number } | null>(null)
 

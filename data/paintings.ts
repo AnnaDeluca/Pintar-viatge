@@ -25,6 +25,9 @@ export interface PaintingMeta {
   museum?: Museum
   /** Obra original creada per a l'app, inspirada en l'estil d'un artista */
   inspiredBy?: string
+  /** El sketch és art IA redibuixat (no derivat dels píxels): el cubell
+   *  d'omplir fa servir les línies del sketch com a límits, no el quadre. */
+  aiSketch?: boolean
 }
 
 export const paintings: PaintingMeta[] = [
@@ -215,6 +218,7 @@ export const paintings: PaintingMeta[] = [
     palette: ['#4CC9F0','#AEE6FF','#F5DEB3','#E63946','#F4A261','#57CC99','#8B4513','#FFD700'],
     regions: [],
     imageUrl: '/paintings/botticelli.jpg', thumbUrl: '/paintings/botticelli-thumb.jpg',
+    aiSketch: true,
     coords: [11.2, 43.8],
     museum: { name: 'Galeria Uffizi', city: 'Florència', country: 'Itàlia', url: 'https://www.uffizi.it', mapsQuery: 'Uffizi Gallery Florence Italy' },
   },
