@@ -41,18 +41,25 @@ if (!existsSync(input)) {
 const out = join(__dirname, '..', 'public', 'sketches', `${id}.png`)
 const pm = await sharp(painting).metadata()
 const im = await sharp(input).metadata()
-const rp = (pm.width / pm.height).toFixed(3)
-const ri = (im.width / im.height).toFixed(3)
-console.log(`quadre ${pm.width}×${pm.height} (ratio ${rp}) · IA ${im.width}×${im.height} (ratio ${ri})`)
-if (Math.abs(rp - ri) > 0.05) {
-  console.warn(`⚠️  Les proporcions difereixen (${rp} vs ${ri}): el sketch es veurà estirat.`)
-  console.warn('   Torna a demanar-la a la IA amb "mateixes proporcions que l\'original".')
+const rp = pm.width / pm.height
+const ri = im.width / im.height
+console.log(`quadre ${pm.width}×${pm.height} (ratio ${rp.toFixed(3)}) · IA ${im.width}×${im.height} (ratio ${ri.toFixed(3)})`)
+
+// Neteja: fons a blanc pur, línies ben negres
+let img = sharp(input).greyscale().normalise().linear(1.18, -28)
+
+// Si les proporcions no coincideixen, farcim amb blanc (mai estirar: les
+// línies es deformarien). El dibuix queda centrat amb marges blancs.
+if (Math.abs(rp - ri) > 0.02) {
+  const buf = await img.toBuffer()
+  let W = im.width, H = im.height
+  if (ri < rp) W = Math.round(im.height * rp)   // falta amplada → bandes laterals
+  else H = Math.round(im.width / rp)            // falta alçada → bandes dalt/baix
+  console.log(`   proporcions ajustades amb marges blancs: ${W}×${H}`)
+  img = sharp(buf).resize(W, H, { fit: 'contain', background: '#ffffff' })
 }
 
-await sharp(input)
-  .greyscale()
-  .normalise()
-  .linear(1.18, -28)
+await img
   .resize(1400)
   .png({ compressionLevel: 9 })
   .toFile(out)

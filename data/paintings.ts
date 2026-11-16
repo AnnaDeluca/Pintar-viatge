@@ -231,6 +231,7 @@ export const paintings: PaintingMeta[] = [
     palette: ['#2364AA','#4CC9F0','#8B4513','#F5DEB3','#1A1A1A','#654321','#C4A35A','#F4A261'],
     regions: [],
     imageUrl: '/paintings/artemisia.jpg', thumbUrl: '/paintings/artemisia-thumb.jpg',
+    aiSketch: true,
     coords: [12.5, 41.9],
     museum: { name: 'Wadsworth Atheneum', city: 'Hartford, Connecticut', country: 'EUA', url: 'https://www.thewadsworth.org', mapsQuery: 'Wadsworth Atheneum Hartford Connecticut', coords: [-72.68, 41.76] },
   },

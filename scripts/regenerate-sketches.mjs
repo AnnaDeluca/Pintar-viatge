@@ -18,7 +18,7 @@ const TARGET_MAX = 0.14  // 14% black pixels maximum
 // tenen sketch PNG ja se salten sols).
 // Sketches IA fets a mà (Gemini) — NO sobreescriure amb Sobel.
 // Workflow: README § "Sketches amb IA".
-const SKIP = new Set(['botticelli'])
+const SKIP = new Set(['botticelli', 'artemisia'])
 
 // Ajustos per quadre:
 //   blur      — més alt elimina textura fina (roca, pa d'or) i deixa els contorns grans
