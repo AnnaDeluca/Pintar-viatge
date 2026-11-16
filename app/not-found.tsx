@@ -22,7 +22,7 @@ export default function NotFound() {
         style={{
           padding: '12px 24px', borderRadius: 999, color: 'white',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15,
-          background: '#D85B3C',
+          background: '#F25C3D',
           boxShadow: '0 8px 20px rgba(216,91,60,0.4)',
         }}>
         ← Tornar a l&apos;atlas

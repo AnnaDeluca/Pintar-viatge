@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { paintings, type PaintingMeta } from '@/data/paintings'
 
-const ACCENT = '#D85B3C'
+const ACCENT = '#F25C3D'
 
 // Regions per als "títols de categoria Netflix"
 const REGIONS = [

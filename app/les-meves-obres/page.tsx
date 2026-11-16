@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { loadArtworks, deleteArtwork, type SavedArtwork } from '@/lib/artworks'
 
-const ACCENT = '#D85B3C'
+const ACCENT = '#F25C3D'
 
 function formatDate(iso: string): string {
   try {

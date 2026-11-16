@@ -1,43 +1,41 @@
 import Link from 'next/link'
 
-const ACCENT = '#D85B3C'
+const ACCENT = '#F25C3D'
 
+// Targetes estil "adhesiu": fons de color viu, contorn de tinta gruixut i
+// ombra sòlida desplaçada — el mateix llenguatge que el logo.
 const MODES = [
   {
     href: '/atlas',
     emoji: '🌍',
     title: 'Descobrir Artistes',
     sub: 'Viatge per l\'art del món',
-    color: '#D85B3C',
-    bg: 'linear-gradient(135deg,#fde8e4,#fbd0c8)',
-    border: '#f4a896',
+    color: '#C73E22',
+    bg: '#FFD9CE',
   },
   {
     href: '/museus',
     emoji: '🏛️',
     title: 'Descobrir Museus',
     sub: 'Visita els museus del món',
-    color: '#2E6A9E',
-    bg: 'linear-gradient(135deg,#ddeeff,#c4dff5)',
-    border: '#9ec4e8',
+    color: '#1E6FB8',
+    bg: '#CFE7FD',
   },
   {
     href: '/la-meva-foto',
     emoji: '📸',
     title: 'La Meva Foto',
     sub: 'Pinta el teu propi dibuix!',
-    color: '#4E8C6A',
-    bg: 'linear-gradient(135deg,#dff5ec,#c4edd8)',
-    border: '#96d9b8',
+    color: '#1F7D48',
+    bg: '#CDF0DB',
   },
   {
     href: '/les-meves-obres',
     emoji: '🖼️',
     title: 'Les Meves Obres',
     sub: 'Les teves creacions guardades',
-    color: '#7C5C9E',
-    bg: 'linear-gradient(135deg,#ede4f7,#dccff0)',
-    border: '#c4a8e0',
+    color: '#6E42C1',
+    bg: '#E5D9FB',
   },
 ]
 
@@ -82,37 +80,37 @@ export default function LandingPage() {
               style={{
                 textDecoration: 'none',
                 background: m.bg,
-                border: `1.5px solid ${m.border}`,
-                borderRadius: 22,
-                padding: '18px 20px',
-                boxShadow: '0 4px 14px rgba(35,50,62,0.08)',
+                border: '2.5px solid var(--ink)',
+                borderRadius: 20,
+                padding: '16px 18px',
+                boxShadow: '0 5px 0 rgba(35,50,62,0.85)',
               }}>
               {/* Emoji */}
               <div className="flex items-center justify-center shrink-0"
                 style={{
-                  width: 64, height: 64, borderRadius: 18, fontSize: 34,
-                  background: 'rgba(255,255,255,0.7)',
-                  boxShadow: '0 2px 8px rgba(35,50,62,0.10)',
+                  width: 62, height: 62, borderRadius: 16, fontSize: 32,
+                  background: '#FFFDF7',
+                  border: '2.5px solid var(--ink)',
                 }}>
                 {m.emoji}
               </div>
               {/* Text */}
               <div className="flex-1 min-w-0">
                 <div style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 19,
-                  color: m.color, lineHeight: 1.1,
+                  fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 19,
+                  color: m.color, lineHeight: 1.12,
                 }}>
                   {m.title}
                 </div>
                 <div style={{
-                  fontFamily: 'var(--font-body)', fontSize: 13.5,
+                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
                   color: 'var(--ink-70)', marginTop: 3,
                 }}>
                   {m.sub}
                 </div>
               </div>
               {/* Fletxa */}
-              <span style={{ fontSize: 20, color: m.color, opacity: 0.6 }}>›</span>
+              <span style={{ fontSize: 22, color: 'var(--ink)', opacity: 0.75, fontWeight: 700 }}>›</span>
             </Link>
           ))}
         </div>

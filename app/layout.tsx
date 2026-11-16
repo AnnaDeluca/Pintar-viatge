@@ -1,16 +1,15 @@
 import type { Metadata, Viewport } from 'next'
-import { Baloo_2, Nunito } from 'next/font/google'
+import { Fredoka, Quicksand } from 'next/font/google'
 import './globals.css'
 
-const display = Baloo_2({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
+// Fredoka: rodona i amb caràcter, llegible en MAJÚSCULES; Quicksand: cos net i modern
+const display = Fredoka({
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-display',
   display: 'swap',
 })
-const body = Nunito({
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
+const body = Quicksand({
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-body',
   display: 'swap',
 })
@@ -40,7 +39,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#D85B3C',
+  themeColor: '#F25C3D',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

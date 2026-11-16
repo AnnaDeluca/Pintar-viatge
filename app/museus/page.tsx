@@ -10,7 +10,7 @@ import { paintings, type PaintingMeta } from '@/data/paintings'
 // Fitxer local (ràpid, funciona offline); CDN només de fallback
 const GEO_URL = '/countries-110m.json'
 const GEO_URL_FALLBACK = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
-const ACCENT = '#2E6A9E'
+const ACCENT = '#3D9BE9'
 
 // ── Carrusel Netflix del museu ───────────────────────────────────
 function MuseumCarousel({ museum, onClose, onPick }: {

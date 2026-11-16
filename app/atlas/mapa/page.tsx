@@ -2,7 +2,7 @@ import Link from 'next/link'
 import WorldMap from '@/components/WorldMap'
 import { paintings } from '@/data/paintings'
 
-const ACCENT = '#D85B3C'
+const ACCENT = '#F25C3D'
 
 export default function MapaPage() {
   const totalArt = paintings.length

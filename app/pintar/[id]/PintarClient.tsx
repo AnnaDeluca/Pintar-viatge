@@ -15,19 +15,19 @@ function sketchUrl(id: string): string {
 }
 
 // Colors extres per omplir paleta si el quadre en té pocs
-const EXTRA_COLORS = ['#1A1A1A','#E63946','#F6C90E','#2E6A9E','#3FA34D','#F4A261']
+const EXTRA_COLORS = ['#1A1A1A','#E63946','#F6C90E','#3D9BE9','#3FA34D','#F4A261']
 
 // Color base del quadre — usat per accents (botons, ressaltats)
 const PIGMENTS: Record<string, string> = {
-  lascaux:'#D85B3C', renoir:'#D85B3C', morisot:'#D85B3C', matisse:'#D85B3C',
-  vigee:'#D85B3C', botticelli:'#2E6A9E', artemisia:'#D85B3C', sofonisba:'#7C5C9E',
-  vangogh:'#E0A52E', cassatt:'#2E6A9E', vermeer:'#2E6A9E', mondrian:'#D85B3C',
-  munch:'#D85B3C', velazquez:'#7C5C9E', kandinsky:'#7C5C9E', klimt:'#E0A52E',
-  hokusai:'#2E6A9E', kusama:'#E0A52E', homer:'#4E8C6A', sargent:'#D85B3C',
-  lewitt:'#D85B3C', ndebele:'#4E8C6A',
-  nebamun:'#57CC99', minhwa:'#C4622A', hiroshige2:'#2E6A9E', varma:'#2E6A9E',
-  torres:'#8B4513', figari:'#C4622A', miro:'#E0A52E', wood:'#4E8C6A',
-  tessellation:'#D85B3C', klee:'#E0A52E', delaunay:'#D85B3C', doesburg:'#D85B3C',
+  lascaux:'#F25C3D', renoir:'#F25C3D', morisot:'#F25C3D', matisse:'#F25C3D',
+  vigee:'#F25C3D', botticelli:'#3D9BE9', artemisia:'#F25C3D', sofonisba:'#9B6DE8',
+  vangogh:'#F7B32B', cassatt:'#3D9BE9', vermeer:'#3D9BE9', mondrian:'#F25C3D',
+  munch:'#F25C3D', velazquez:'#9B6DE8', kandinsky:'#9B6DE8', klimt:'#F7B32B',
+  hokusai:'#3D9BE9', kusama:'#F7B32B', homer:'#3FB36F', sargent:'#F25C3D',
+  lewitt:'#F25C3D', ndebele:'#3FB36F',
+  nebamun:'#57CC99', minhwa:'#C4622A', hiroshige2:'#3D9BE9', varma:'#3D9BE9',
+  torres:'#8B4513', figari:'#C4622A', miro:'#F7B32B', wood:'#3FB36F',
+  tessellation:'#F25C3D', klee:'#F7B32B', delaunay:'#F25C3D', doesburg:'#F25C3D',
 }
 
 // glossy "wet paint" radial fill per cada dab
@@ -215,7 +215,7 @@ function StudioBtn({ children, onClick, ariaLabel }: { children: React.ReactNode
 
 export default function PintarClient({ painting }: { painting: PaintingMeta }) {
   const isDots = painting.mechanic === 'dots'
-  const accent = PIGMENTS[painting.id] ?? '#D85B3C'
+  const accent = PIGMENTS[painting.id] ?? '#F25C3D'
 
   // Comprova si hi ha una imatge personalitzada pujada via /admin
   const [customImageUrl, setCustomImageUrl] = useState<string | null>(null)
@@ -791,7 +791,7 @@ export default function PintarClient({ painting }: { painting: PaintingMeta }) {
           className="fixed inset-0 flex flex-col items-center justify-center"
           style={{ background: 'rgba(251,245,233,0.96)', zIndex: 60, animation: 'fadeIn .2s ease' }}>
           {[...Array(26)].map((_, i) => {
-            const cols = ['#D85B3C', '#E0A52E', '#2E6A9E', '#4E8C6A', '#7C5C9E', '#FFD700']
+            const cols = ['#F25C3D', '#F7B32B', '#3D9BE9', '#3FB36F', '#9B6DE8', '#FFD700']
             return (
               <div key={i} style={{
                 position: 'absolute', top: 0,

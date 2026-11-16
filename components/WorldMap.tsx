@@ -9,11 +9,11 @@ import { paintings, type PaintingMeta } from '@/data/paintings'
 
 // Tons del museu — mapeig de regió a pigment
 const TONE_HEX: Record<string, string> = {
-  terracotta: '#D85B3C',
-  ochre:      '#E0A52E',
-  prussian:   '#2E6A9E',
-  viridian:   '#4E8C6A',
-  plum:       '#7C5C9E',
+  terracotta: '#F25C3D',
+  ochre:      '#F7B32B',
+  prussian:   '#3D9BE9',
+  viridian:   '#3FB36F',
+  plum:       '#9B6DE8',
 }
 
 // Països ressaltats segons el seu pigment
@@ -46,15 +46,15 @@ interface Region {
 
 // Color accent per a cada quadre individual al mapa
 const PAINTING_COLOR: Record<string, string> = {
-  lascaux:'#C4A35A', renoir:'#D85B3C', morisot:'#4CC9F0', matisse:'#E63946',
+  lascaux:'#C4A35A', renoir:'#F25C3D', morisot:'#4CC9F0', matisse:'#E63946',
   vigee:'#57CC99', botticelli:'#4CC9F0', artemisia:'#2364AA', sofonisba:'#8B5CF6',
   vangogh:'#F6C90E', cassatt:'#AEE6FF', vermeer:'#E8D5B7', mondrian:'#E63946',
   munch:'#FF6B6B', velazquez:'#C8A882', kandinsky:'#8B5CF6', klimt:'#FFD700',
   hokusai:'#4CC9F0', kusama:'#F6C90E', homer:'#57CC99', sargent:'#FF6B6B',
   lewitt:'#E63946', ndebele:'#57CC99', miro:'#F6C90E', klee:'#F4A261',
   delaunay:'#E63946', doesburg:'#2364AA', tessellation:'#8B5CF6',
-  varma:'#7C5C9E', figari:'#E0A52E', torres:'#D85B3C',
-  nebamun:'#E0A52E', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
+  varma:'#9B6DE8', figari:'#F7B32B', torres:'#F25C3D',
+  nebamun:'#F7B32B', minhwa:'#4CC9F0', hiroshige2:'#4CC9F0',
   wood:'#57CC99',
 }
 
@@ -623,7 +623,7 @@ export default function WorldMap() {
             return paintings.filter(p => p.coords).map(p => {
               const pt = spread[p.id]
               if (!pt) return null
-              const color = PAINTING_COLOR[p.id] ?? '#D85B3C'
+              const color = PAINTING_COLOR[p.id] ?? '#F25C3D'
               const s = 1 / zoom
               return (
                 <g key={p.id} transform={`translate(${pt[0]},${pt[1]}) scale(${s})`}

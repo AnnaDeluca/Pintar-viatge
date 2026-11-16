@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { paintings } from '@/data/paintings'
 
-const ACCENT = '#D85B3C'
+const ACCENT = '#F25C3D'
 
 type UploadState = 'idle' | 'uploading' | 'ok' | 'error'
 

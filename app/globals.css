@@ -10,12 +10,12 @@
   --ink-35: rgba(35, 50, 62, 0.32);
   --line: rgba(35, 50, 62, 0.12);
 
-  /* museum pigments — accents extrets de les obres */
-  --terracotta: #D85B3C;
-  --ochre: #E0A52E;
-  --prussian: #2E6A9E;
-  --viridian: #4E8C6A;
-  --plum: #7C5C9E;
+  /* pigments — paleta viva i alegre, a joc amb el logo */
+  --terracotta: #F25C3D;
+  --ochre: #F7B32B;
+  --prussian: #3D9BE9;
+  --viridian: #3FB36F;
+  --plum: #9B6DE8;
 
   /* atlas map (parchment theme) */
   --ocean: #F3E9D4;
@@ -26,8 +26,8 @@
   --ocean-night: #101B2E;
   --land-night: #1C2A40;
 
-  --font-display: 'Baloo 2', system-ui, sans-serif;
-  --font-body: 'Nunito', system-ui, sans-serif;
+  --font-display: 'Fredoka', system-ui, sans-serif;
+  --font-body: 'Quicksand', system-ui, sans-serif;
 }
 
 * {

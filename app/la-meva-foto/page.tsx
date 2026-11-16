@@ -4,7 +4,7 @@ import Link from 'next/link'
 import ColoringCanvas, { type ColoringCanvasHandle, type Tool, type BrushType } from '@/components/ColoringCanvas'
 import { saveArtwork } from '@/lib/artworks'
 
-const ACCENT = '#4E8C6A'
+const ACCENT = '#3FB36F'
 
 // HF Space per a photo-to-sketch via IA
 const HF_SPACE = 'radames/sketcher'
