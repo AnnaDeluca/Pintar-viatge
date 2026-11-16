@@ -45,7 +45,10 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ background: 'var(--paper)' }}>
       {/* Header */}
-      <header className="shrink-0 text-center" style={{ paddingTop: 52, paddingBottom: 24 }}>
+      <header className="shrink-0 text-center" style={{ paddingTop: 40, paddingBottom: 24 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="" width={64} height={64}
+          style={{ borderRadius: 18, boxShadow: '0 4px 12px rgba(35,50,62,0.16)', margin: '0 auto 12px' }} />
         <div className="flex items-center justify-center gap-2 mb-2">
           <span style={{ display: 'inline-block', width: 26, height: 3, borderRadius: 3, background: ACCENT }} />
           <span style={{

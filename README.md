@@ -23,7 +23,9 @@ pel món i el temps. Feta amb Next.js (App Router) + Tailwind, en català.
   contorns en temps real al navegador (adaptive threshold).
 - Per regenerar sketches: `node scripts/regenerate-sketches.mjs [id1 id2 ...]`
   (sense arguments els regenera tots). Ajustos per quadre a `OVERRIDES` dins
-  l'script (p. ex. més `blur` per eliminar textura fina com la roca de Lascaux).
+  l'script: `blur` (elimina textura fina), `minComp` (anti-puntets), `dilate`
+  (engruixeix línies) i `colorEdges` (vores per canal de color, per a contorns
+  que tenen la mateixa lluminositat — ex. la Venus de Botticelli).
 
 ## Desplegament
 
